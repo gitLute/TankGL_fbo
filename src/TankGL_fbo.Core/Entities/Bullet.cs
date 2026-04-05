@@ -11,7 +11,7 @@ public sealed class Bullet : IUpdatable, IRenderable
     public int ZIndex => 4;
     public string TexturePath => "bullet.png";
 
-    public float Lifetime { get; private set; }
+    public float Lifetime { get; internal set; }
     public float Damage { get; }
     public RectAABB Bounds => new(Position, new Vector2(4f, 4f));
     public bool IsExpired => Lifetime <= 0;

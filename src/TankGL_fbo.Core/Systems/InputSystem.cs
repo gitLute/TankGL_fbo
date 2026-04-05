@@ -1,33 +1,31 @@
-namespace TankGL_fbo.Core.Systems;
-
 using TankGL_fbo.Core.Contracts;
 using TankGL_fbo.Core.Entities;
 
+namespace TankGL_fbo.Core.Systems;
+
 public sealed class InputSystem
 {
-    private readonly Dictionary<int, HashSet<PlayerAction>> _playerInputs;
     private readonly List<Tank> _tanks;
     private readonly List<Bullet> _bullets;
-
 
     private const float RotateSpeed = 2.5f;
     private const float BulletSpawnOffset = 22f;
 
-    public InputSystem(Dictionary<int, HashSet<PlayerAction>> playerInputs, List<Tank> tanks, List<Bullet> bullets)
+    public InputSystem(List<Tank> tanks, List<Bullet> bullets)
     {
-        _playerInputs = playerInputs;
         _tanks = tanks;
         _bullets = bullets;
     }
 
-    public void Process(float deltaTime)
+
+    public void Process(Dictionary<int, HashSet<PlayerAction>> activeInputs, float deltaTime)
     {
         for (int i = 0; i < _tanks.Count; i++)
         {
             var tank = _tanks[i];
             if (tank.IsDestroyed) continue;
 
-            if (!_playerInputs.TryGetValue(i, out var actions)) continue;
+            if (!activeInputs.TryGetValue(i, out var actions)) continue;
 
             if (actions.Contains(PlayerAction.RotateLeft)) tank.Rotate(-RotateSpeed * deltaTime);
             if (actions.Contains(PlayerAction.RotateRight)) tank.Rotate(RotateSpeed * deltaTime);

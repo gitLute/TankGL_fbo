@@ -8,7 +8,9 @@ public sealed class Bonus : IUpdatable, IRenderable
 {
     public Vector2 Position { get; private set; }
     public BonusType Type { get; }
-    public float Lifetime { get; private set; }
+    public float Lifetime { get; internal set; }
+
+    public RectAABB Bounds => new(Position, new Vector2(14f, 14f));
 
     public string TexturePath => Type switch
     {
@@ -20,7 +22,7 @@ public sealed class Bonus : IUpdatable, IRenderable
         _ => "error.png"
     };
 
-    public float Rotation => 0;
+    public float Rotation => 0f;
     public float Scale => 0.8f;
     public int ZIndex => 1;
 
