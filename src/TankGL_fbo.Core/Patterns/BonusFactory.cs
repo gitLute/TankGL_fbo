@@ -1,4 +1,6 @@
 namespace TankGL_fbo.Core.Patterns;
+
+using TankGL_fbo.Core.Contracts;
 using TankGL_fbo.Core.Interfaces;
 
 public static class BonusFactory

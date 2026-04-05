@@ -33,6 +33,4 @@ public sealed class Bonus : IUpdatable, IRenderable
 
     public void Update(float deltaTime) => Lifetime -= deltaTime;
     public bool IsExpired => Lifetime <= 0;
-
-    Vector2 IRenderable.Position => throw new NotImplementedException();
 }
