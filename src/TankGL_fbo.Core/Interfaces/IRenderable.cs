@@ -1,4 +1,6 @@
-namespace TankGL_fbo.Core.Contracts;
+using TankGL_fbo.Core.Contracts;
+
+namespace TankGL_fbo.Core.Interfaces;
 
 public interface IRenderable
 {
