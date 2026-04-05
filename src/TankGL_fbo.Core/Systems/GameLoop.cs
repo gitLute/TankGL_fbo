@@ -18,7 +18,6 @@ public sealed class GameLoop
     private double _accumulator = 0;
     private const double FixedDt = 1.0 / 60.0;
 
-    
     public event Action<IEnumerable<IRenderable>>? RenderReady;
 
     public GameLoop(List<Tank> tanks, List<Bullet> bullets, List<Wall> walls, List<Bonus> bonuses)
@@ -33,9 +32,6 @@ public sealed class GameLoop
         _spawn = new SpawnSystem(_bonuses, _walls, _tanks);
     }
 
-    
-    
-    
     public void Tick(Dictionary<int, HashSet<PlayerAction>> playerInputs, float deltaTime)
     {
         _accumulator += deltaTime;
@@ -44,29 +40,24 @@ public sealed class GameLoop
         {
             float fixedDt = (float)FixedDt;
 
-            
             foreach (var t in _tanks) t.Update(fixedDt);
             foreach (var b in _bonuses) b.Update(fixedDt);
             foreach (var b in _bullets) b.Update(fixedDt);
 
-            
             _input.Process(playerInputs, fixedDt);
 
-            
             _spawn.Update(fixedDt);
 
-            
             _collision.Resolve();
 
-            
             _bullets.RemoveAll(b => b.IsExpired);
             _bonuses.RemoveAll(b => b.IsExpired);
 
             _accumulator -= FixedDt;
         }
 
-        
         var renderables = new List<IRenderable>(_tanks.Count + _bullets.Count + _walls.Count + _bonuses.Count);
+
         renderables.AddRange(_walls);
         renderables.AddRange(_tanks.Where(t => !t.IsDestroyed));
         renderables.AddRange(_bonuses);
