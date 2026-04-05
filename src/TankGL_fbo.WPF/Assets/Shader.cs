@@ -83,5 +83,5 @@ public sealed class Shader : IDisposable
         _disposed = true;
         GC.SuppressFinalize(this);
     }
-    ~Shader() => Dispose(false);
+    ~Shader() => Dispose();
 }
