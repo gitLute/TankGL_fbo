@@ -2,12 +2,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TankGL_fbo.Core\TankGL_fbo.Core.csproj" />
+    <ProjectReference Include="..\TankGL_fbo.OpenGL\TankGL_fbo.OpenGL.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="OpenTK" Version="4.9.4" />
     <PackageReference Include="OpenTK.GLControl" Version="4.0.2" />
-    <PackageReference Include="StbImageSharp" Version="2.30.15" />
     <None Include="Assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 

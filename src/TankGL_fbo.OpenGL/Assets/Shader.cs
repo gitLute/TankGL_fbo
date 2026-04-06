@@ -3,7 +3,7 @@ using System.IO;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 
-namespace TankGL_fbo.WPF.Assets;
+namespace TankGL_fbo.OpenGL.Assets;
 
 public sealed class Shader : IDisposable
 {

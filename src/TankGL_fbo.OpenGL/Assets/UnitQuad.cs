@@ -1,6 +1,6 @@
 using OpenTK.Graphics.OpenGL4;
 
-namespace TankGL_fbo.WPF.Assets;
+namespace TankGL_fbo.OpenGL.Assets;
 
 public sealed class UnitQuad : IDisposable
 {
