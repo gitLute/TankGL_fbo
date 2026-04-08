@@ -3,15 +3,13 @@ using System.IO;
 
 namespace TankGL_fbo.WPF.Systems;
 
-public sealed class AssetManager : IDisposable
+public sealed class AssetManager(string basePath) : IDisposable
 {
-    private readonly string _basePath;
+    private readonly string _basePath = basePath;
     private readonly Dictionary<string, Shader> _shaders = [];
     private readonly Dictionary<string, Texture2D> _textures = [];
 
     public UnitQuad Quad { get; private set; } = null!;
-
-    public AssetManager(string basePath) => _basePath = basePath;
 
     public void Init()
     {
@@ -36,9 +34,19 @@ public sealed class AssetManager : IDisposable
 
     public Texture2D LoadTexture(string name)
     {
+        string path = Path.Combine(_basePath, "Textures", name);
+
+        if (!File.Exists(path))
+        {
+            string missingPath = Path.Combine(_basePath, "Textures", "missing.png");
+
+            if (!File.Exists(missingPath)) throw new FileNotFoundException($"Ни основной файл ({name}), ни резервный (missing.png) не найдены.");
+
+            path = missingPath;
+        }
+
         if (_textures.TryGetValue(name, out var t)) return t;
 
-        string path = Path.Combine(_basePath, "Textures", name);
         if (!File.Exists(path))
         {
             Debug.WriteLine($"[AssetManager] Missing texture: {path}");
