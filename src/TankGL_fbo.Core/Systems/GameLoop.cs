@@ -7,6 +7,7 @@ namespace TankGL_fbo.Core.Systems;
 public sealed class GameLoop
 {
     private readonly List<Tank> _tanks;
+    public IReadOnlyList<Tank> Tanks => _tanks;
     private readonly List<Bullet> _bullets;
     private readonly List<Wall> _walls;
     private readonly List<Bonus> _bonuses;

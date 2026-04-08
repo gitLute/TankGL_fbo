@@ -2,7 +2,7 @@ using System.IO;
 using OpenTK.Graphics.OpenGL4;
 using StbImageSharp;
 
-namespace TankGL_fbo.OpenGL.Assets;
+namespace TankGL_fbo.WPF.Systems;
 
 public sealed class Texture2D : IDisposable
 {

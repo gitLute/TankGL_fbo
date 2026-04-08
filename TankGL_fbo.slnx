@@ -1,7 +1,6 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/TankGL_fbo.Core/TankGL_fbo.Core.csproj" />
-    <Project Path="src/TankGL_fbo.OpenGL/TankGL_fbo.OpenGL.csproj" />
     <Project Path="src/TankGL_fbo.WPF/TankGL_fbo.WPF.csproj" />
   </Folder>
 </Solution>

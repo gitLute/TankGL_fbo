@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 
-namespace TankGL_fbo.OpenGL.Assets;
+namespace TankGL_fbo.WPF.Systems;
 
 public sealed class AssetManager : IDisposable
 {
