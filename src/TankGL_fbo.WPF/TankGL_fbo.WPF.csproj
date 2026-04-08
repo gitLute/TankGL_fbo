@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <!-- <ApplicationDefinition Include="App.xaml" /> -->
     <ProjectReference Include="..\TankGL_fbo.Core\TankGL_fbo.Core.csproj" />
   </ItemGroup>
 
