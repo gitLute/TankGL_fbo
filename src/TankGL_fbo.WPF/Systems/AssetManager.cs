@@ -22,13 +22,11 @@ public sealed class AssetManager(string basePath) : IDisposable
         string vPath = Path.Combine(_basePath, vertRel);
         string fPath = Path.Combine(_basePath, fragRel);
         if (File.Exists(vPath) && File.Exists(fPath)) _shaders[name] = Shader.FromFiles(vPath, fPath);
-        else Debug.WriteLine($"[AssetManager] Missing shader files for '{name}'");
     }
 
     public Shader GetShader(string name)
     {
         if (_shaders.TryGetValue(name, out var s)) return s;
-        Debug.WriteLine($"[AssetManager] Shader '{name}' not found!");
         return _shaders.Values.FirstOrDefault() ?? throw new Exception("No shaders loaded.");
     }
 
@@ -49,7 +47,6 @@ public sealed class AssetManager(string basePath) : IDisposable
 
         if (!File.Exists(path))
         {
-            Debug.WriteLine($"[AssetManager] Missing texture: {path}");
             return _textures.Values.FirstOrDefault()!;
         }
 

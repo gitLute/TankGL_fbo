@@ -39,14 +39,12 @@ public sealed class Shader : IDisposable
         GL.ShaderSource(id, source);
         GL.CompileShader(id);
         GL.GetShader(id, ShaderParameter.CompileStatus, out int ok);
-        if (ok == 0) Debug.WriteLine($"[Shader] Compile error: {GL.GetShaderInfoLog(id)}");
         return id;
     }
 
     private void CheckLog(int program)
     {
         GL.GetProgram(program, GetProgramParameterName.LinkStatus, out int ok);
-        if (ok == 0) Debug.WriteLine($"[Shader] Link error: {GL.GetProgramInfoLog(program)}");
     }
 
     private void CacheUniforms()

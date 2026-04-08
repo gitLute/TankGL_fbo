@@ -28,6 +28,7 @@ namespace TankGL_fbo.WPF
         private Shader _shader = null!;
         private GLControl _glControl = null!;
         private bool _isInitialized = false;
+        private OpenGlTextRenderer? _textRenderer;
 
         private readonly Dictionary<int, HashSet<PlayerAction>> _activeInputs = new() { [0] = new(), [1] = new() };
         private readonly Dictionary<Key, (int playerId, PlayerAction action)> _keyMap = new();
@@ -62,7 +63,7 @@ namespace TankGL_fbo.WPF
         {
             var settings = new GLControlSettings
             {
-                Profile = ContextProfile.Core,
+                Profile = ContextProfile.Compatability,
                 API = ContextAPI.OpenGL,
                 APIVersion = new Version(3, 3)
             };
@@ -94,6 +95,7 @@ namespace TankGL_fbo.WPF
             {
                 _assets.Init();
                 _shader = _assets.GetShader("default");
+                _textRenderer = new OpenGlTextRenderer();
 
                 GL.ClearColor(0.15f, 0.15f, 0.15f, 1.0f);
                 GL.Enable(EnableCap.Blend);
@@ -134,15 +136,24 @@ namespace TankGL_fbo.WPF
             _gameLoop.Tick(_activeInputs, Math.Min(dt, 0.1f));
 
             _glControl.Invalidate();
-            UpdateHud();
         }
 
         private void UpdateHud()
         {
-            if (_gameLoop != null && _gameLoop.Tanks.Count >= 2)
+            if (_gameLoop != null && _gameLoop.Tanks.Count >= 2 && _textRenderer != null)
             {
-                TxtP1HP.Text = $"P1 HP: {Math.Max(0, (int)_gameLoop.Tanks[0].HP)}";
-                TxtP2HP.Text = $"P2 HP: {Math.Max(0, (int)_gameLoop.Tanks[1].HP)}";
+                string hpStatusPl1 = $"HP_1: {Math.Max(0, (int)_gameLoop.Tanks[0].HP)}";
+                string hpStatusPl2 = $"HP_2: {Math.Max(0, (int)_gameLoop.Tanks[1].HP)}";
+
+                string Status = $"{hpStatusPl1}\n{hpStatusPl2}";
+
+                _textRenderer.DrawText(
+                    Status,
+                    50, 50,
+                    32,
+                    Host.Child.Width,
+                    Host.Child.Height
+                );
             }
         }
 
@@ -161,7 +172,7 @@ namespace TankGL_fbo.WPF
             _projection = Matrix4.CreateOrthographic(_glControl.ClientSize.Width, _glControl.ClientSize.Height, -1, 1);
         }
 
-        private void GlControl_Paint(object? sender, System.Windows.Forms.PaintEventArgs e)
+        private void GlControl_Paint(object? sender, PaintEventArgs e)
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
 
@@ -188,17 +199,21 @@ namespace TankGL_fbo.WPF
                 _assets.Quad.Draw();
             }
 
+            GL.UseProgram(0);
+
+            UpdateHud();
+
             _glControl.SwapBuffers();
         }
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (_keyMap.TryGetValue(e.Key, out var map))  _activeInputs[map.playerId].Add(map.action);
+            if (_keyMap.TryGetValue(e.Key, out var map)) _activeInputs[map.playerId].Add(map.action);
         }
 
         private void Window_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (_keyMap.TryGetValue(e.Key, out var map))  _activeInputs[map.playerId].Remove(map.action);
+            if (_keyMap.TryGetValue(e.Key, out var map)) _activeInputs[map.playerId].Remove(map.action);
         }
     }
 }
