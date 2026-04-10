@@ -16,6 +16,7 @@ using TankGL_fbo.Core.Interfaces;
 using TankGL_fbo.Core.Patterns.Decorators;
 using TankGL_fbo.Core.Systems;
 using TankGL_fbo.WPF.Systems;
+using TankGL_fbo.Core.Patterns;
 
 using Vector2 = TankGL_fbo.Core.Contracts.Vector2;
 
@@ -59,6 +60,7 @@ namespace TankGL_fbo.WPF
             _keyMap[Key.Enter] = (1, PlayerAction.Fire);
         }
 
+        [Obsolete]
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             var settings = new GLControlSettings
@@ -142,18 +144,38 @@ namespace TankGL_fbo.WPF
         {
             if (_gameLoop != null && _gameLoop.Tanks.Count >= 2 && _textRenderer != null)
             {
-                string hpStatusPl1 = $"HP_1: {Math.Max(0, (int)_gameLoop.Tanks[0].HP)}";
-                string hpStatusPl2 = $"HP_2: {Math.Max(0, (int)_gameLoop.Tanks[1].HP)}";
+                var tank1 = _gameLoop.Tanks[0];
+                var tank2 = _gameLoop.Tanks[1];
 
-                string Status = $"{hpStatusPl1}\n{hpStatusPl2}";
+                static string GetBonusInfo(Tank tank)
+                {
+                    if (tank.Stats is TankGL_fbo.Core.Patterns.Decorators.StatDecorator dec && !dec.IsExpired)
+                    {
+                        string typeName = dec.GetType().Name.Replace("Decorator", "");
+                        return $"Bonus: {typeName} ({dec.DurationLeft:F1}s)";
+                    }
+                    return "Bonus: None";
+                }
 
-                _textRenderer.DrawText(
-                    Status,
-                    50, 50,
-                    32,
-                    Host.Child.Width,
-                    Host.Child.Height
-                );
+                string statsPl1 = $"P1 HP: {(int)Math.Max(0, tank1.HP)}\n" +
+                                $"Ammo: {tank1.Stats.Ammo}\n" +
+                                $"Fuel: {(int)tank1.Stats.Fuel}\n" +
+                                $"Spd: {(int)tank1.Stats.Speed}\n" +
+                                $"Arm: {(int)tank1.Stats.Armor}\n" +
+                                $"Dmg: {(int)tank1.Stats.Damage}\n" +
+                                $"{GetBonusInfo(tank1)}";
+
+                string statsPl2 = $"P2 HP: {(int)Math.Max(0, tank2.HP)}\n" +
+                                $"Ammo: {tank2.Stats.Ammo}\n" +
+                                $"Fuel: {(int)tank2.Stats.Fuel}\n" +
+                                $"Spd: {(int)tank2.Stats.Speed}\n" +
+                                $"Arm: {(int)tank2.Stats.Armor}\n" +
+                                $"Dmg: {(int)tank2.Stats.Damage}\n" +
+                                $"{GetBonusInfo(tank2)}";
+
+                _textRenderer.DrawText(statsPl1, 50, 50, 16, Host.Child.Width, Host.Child.Height);
+
+                _textRenderer.DrawText(statsPl2, Host.Child.Width - 250, 50, 16, Host.Child.Width, Host.Child.Height);
             }
         }
 
@@ -172,6 +194,7 @@ namespace TankGL_fbo.WPF
             _projection = Matrix4.CreateOrthographic(_glControl.ClientSize.Width, _glControl.ClientSize.Height, -1, 1);
         }
 
+        [Obsolete]
         private void GlControl_Paint(object? sender, PaintEventArgs e)
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
@@ -188,16 +211,38 @@ namespace TankGL_fbo.WPF
                 var tex = _assets.LoadTexture(entity.TexturePath);
                 if (tex == null) continue;
 
-                tex.Use();
+                float renderWidth, renderHeight;
 
-                var model = Matrix4.CreateScale(tex.Width * entity.Scale, tex.Height * entity.Scale, 1.0f) *
+                renderWidth = entity.Bounds.HalfSize.X * 2f;
+                renderHeight = entity.Bounds.HalfSize.Y * 2f;
+
+
+                var model = Matrix4.CreateScale(renderWidth, renderHeight, 1.0f) *
                             Matrix4.CreateRotationZ(entity.Rotation) *
                             Matrix4.CreateTranslation(entity.Position.X, entity.Position.Y, 0);
 
                 _shader.SetMatrix4("uModel", model);
+
+                tex.Use();
                 _assets.Quad.Bind();
                 _assets.Quad.Draw();
             }
+
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
+            GL.BindTexture(TextureTarget.Texture2D, 0);
+
+            foreach (var entity in renderList)
+            {
+                var boxWidth = entity.Bounds.HalfSize.X * 2;
+                var boxHeight = entity.Bounds.HalfSize.Y * 2;
+
+                var debugModel = Matrix4.CreateScale(boxWidth, boxHeight, 1.0f) * Matrix4.CreateTranslation(entity.Bounds.Center.X, entity.Bounds.Center.Y, 0);
+
+                _shader.SetMatrix4("uModel", debugModel);
+                _assets.Quad.Draw();
+            }
+
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
             GL.UseProgram(0);
 
@@ -208,7 +253,32 @@ namespace TankGL_fbo.WPF
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (_keyMap.TryGetValue(e.Key, out var map)) _activeInputs[map.playerId].Add(map.action);
+            if (_keyMap.TryGetValue(e.Key, out var map))
+            {
+                _activeInputs[map.playerId].Add(map.action);
+                return;
+            }
+
+            // 👇 Обработка чит-кодов для бонусов
+            if (_gameLoop != null)
+            {
+                BonusType? bonus = e.Key switch
+                {
+                    Key.D1 or Key.NumPad1 => BonusType.SpeedUp,
+                    Key.D2 or Key.NumPad2 => BonusType.Shield,
+                    Key.D3 or Key.NumPad3 => BonusType.DamageBoost,
+                    Key.D4 or Key.NumPad4 => BonusType.AmmoRefill,
+                    Key.D5 or Key.NumPad5 => BonusType.FuelCan,
+                    _ => null
+                };
+
+                if (bonus.HasValue)
+                {
+                    // Если зажат Shift, применяем ко второму танку, иначе к первому
+                    int tankIndex = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) ? 1 : 0;
+                    _gameLoop.ApplyBonus(tankIndex, bonus.Value);
+                }
+            }
         }
 
         private void Window_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)

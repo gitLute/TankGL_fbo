@@ -8,15 +8,5 @@
     
     <Grid>
         <wfi:WindowsFormsHost x:Name="Host" />
-        
-        <!-- <StackPanel x:Name="UiOverlay" VerticalAlignment="Top" HorizontalAlignment="Left" 
-                    Margin="20" IsHitTestVisible="False">
-            <TextBlock x:Name="TxtP1HP" Text="P1 HP: 100" Foreground="#FF4444" FontSize="20" FontWeight="Bold">
-                <TextBlock.Effect><DropShadowEffect BlurRadius="4" Color="Black" ShadowDepth="1"/></TextBlock.Effect>
-            </TextBlock>
-            <TextBlock x:Name="TxtP2HP" Text="P2 HP: 100" Foreground="#4488FF" FontSize="20" FontWeight="Bold" Margin="0,5,0,0">
-                <TextBlock.Effect><DropShadowEffect BlurRadius="4" Color="Black" ShadowDepth="1"/></TextBlock.Effect>
-            </TextBlock>
-        </StackPanel> -->
     </Grid>
 </Window>

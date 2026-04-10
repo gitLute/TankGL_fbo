@@ -11,6 +11,8 @@ public sealed class Bullet : IUpdatable, IRenderable
     public int ZIndex => 4;
     public string TexturePath => "bullet.png";
 
+    public int OwnerId { get; }
+
     public float Lifetime { get; internal set; }
     public float Damage { get; }
     public RectAABB Bounds => new(Position, new Vector2(4f, 4f));
@@ -18,12 +20,14 @@ public sealed class Bullet : IUpdatable, IRenderable
 
     private readonly Vector2 _velocity;
 
-    public Bullet(Vector2 startPos, float directionAngle, float speed, float damage, float lifetime)
+    public Bullet(Vector2 startPos, float directionAngle, float speed, float damage, float lifetime, int ownerId)
     {
         Position = startPos;
         Rotation = directionAngle;
         Damage = damage;
         Lifetime = lifetime;
+
+        OwnerId = ownerId;
 
         _velocity = new Vector2(MathF.Cos(directionAngle), MathF.Sin(directionAngle)) * speed;
     }

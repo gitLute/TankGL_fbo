@@ -9,4 +9,5 @@ public interface IRenderable
     float Rotation { get; }
     float Scale { get; }
     int ZIndex { get; }
+    RectAABB Bounds { get; }
 }

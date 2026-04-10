@@ -1,6 +1,7 @@
 using TankGL_fbo.Core.Contracts;
 using TankGL_fbo.Core.Entities;
 using TankGL_fbo.Core.Interfaces;
+using TankGL_fbo.Core.Patterns;
 
 namespace TankGL_fbo.Core.Systems;
 
@@ -65,5 +66,17 @@ public sealed class GameLoop
         renderables.AddRange(_bullets);
 
         RenderReady?.Invoke(renderables);
+    }
+
+    public void ApplyBonus(int tankIndex, BonusType type)
+    {
+        if (tankIndex >= 0 && tankIndex < _tanks.Count)
+        {
+            var tank = _tanks[tankIndex];
+            if (!tank.IsDestroyed)
+            {
+                _collision.ApplyBonus(tank, type);
+            }
+        }
     }
 }

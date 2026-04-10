@@ -42,7 +42,7 @@ public sealed class InputSystem
             if (actions.Contains(PlayerAction.Fire) && tank.TryFire())
             {
                 Vector2 spawnPos = tank.Position + new Vector2(cos, sin) * BulletSpawnOffset;
-                _bullets.Add(new Bullet(spawnPos, tank.Rotation, 450f, tank.Stats.Damage, 3.0f));
+                _bullets.Add(new Bullet(spawnPos, tank.Rotation, 450f, tank.Stats.Damage, 3.0f, i));
             }
         }
     }

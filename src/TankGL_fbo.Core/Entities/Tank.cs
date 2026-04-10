@@ -17,7 +17,7 @@ public sealed class Tank : IUpdatable, IRenderable
     public float HP { get; private set; }
     public float CooldownTimer { get; private set; }
 
-    public RectAABB Bounds => new(Position, new Vector2(18f, 24f));
+    public RectAABB Bounds => new(Position, new Vector2(24f, 24f));
     public bool IsDestroyed => HP <= 0;
 
     private const float MaxHP = 100f;
@@ -47,7 +47,7 @@ public sealed class Tank : IUpdatable, IRenderable
 
         Vector2 displacement = direction.Normalized() * Stats.Speed * deltaTime;
         Position += displacement;
-        Stats.Fuel -= MathF.Abs(displacement.Length()) * 0.05f;
+        Stats.Fuel -= MathF.Abs(displacement.Length()) * 0.02f;
         if (Stats.Fuel < 0) Stats.Fuel = 0;
     }
 

@@ -13,6 +13,8 @@ public abstract class StatDecorator : Interfaces.ICombatStats, Interfaces.IUpdat
 
     public bool IsExpired => _durationLeft <= 0;
 
+    public float DurationLeft => _durationLeft;
+
     public virtual float Speed => _wrapped.Speed;
     public virtual float Armor => _wrapped.Armor;
     public virtual float Damage => _wrapped.Damage;

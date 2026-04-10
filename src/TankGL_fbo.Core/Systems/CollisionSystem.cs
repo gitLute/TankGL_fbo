@@ -61,9 +61,13 @@ public sealed class CollisionSystem
             }
             if (bullet.IsExpired) continue;
 
-            foreach (var tank in _tanks)
+            for (int j = 0; j < _tanks.Count; j++)
             {
+                var tank = _tanks[j];
                 if (tank.IsDestroyed) continue;
+
+                if (j == bullet.OwnerId) continue;
+
                 if (bullet.Bounds.Intersects(tank.Bounds))
                 {
                     tank.TakeDamage(bullet.Damage);
@@ -74,7 +78,7 @@ public sealed class CollisionSystem
         }
     }
 
-    private void ApplyBonus(Tank tank, BonusType type)
+    public void ApplyBonus(Tank tank, BonusType type)
     {
         switch (type)
         {
