@@ -206,7 +206,7 @@ namespace TankGL_fbo.WPF
             var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
             
             
-            const float TileSize = 28f; 
+            const float TileSize = 50f; 
 
             foreach (var entity in renderList)
             {
