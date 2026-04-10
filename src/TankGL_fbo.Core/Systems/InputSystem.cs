@@ -27,8 +27,8 @@ public sealed class InputSystem
 
             if (!activeInputs.TryGetValue(i, out var actions)) continue;
 
-            if (actions.Contains(PlayerAction.RotateLeft)) tank.Rotate(-RotateSpeed * deltaTime);
-            if (actions.Contains(PlayerAction.RotateRight)) tank.Rotate(RotateSpeed * deltaTime);
+            if (actions.Contains(PlayerAction.RotateLeft)) tank.Rotate(RotateSpeed * deltaTime);
+            if (actions.Contains(PlayerAction.RotateRight)) tank.Rotate(-RotateSpeed * deltaTime);
 
             Vector2 moveDir = Vector2.Zero;
             float cos = MathF.Cos(tank.Rotation);

@@ -74,6 +74,12 @@ public sealed class Shader : IDisposable
         if (_uniformLocations.TryGetValue(name, out int loc) && loc != -1) GL.Uniform1(loc, value);
     }
 
+    public void SetVector2(string name, OpenTK.Mathematics.Vector2 value)
+    {
+        if (_uniformLocations.TryGetValue(name, out int loc) && loc != -1) 
+            GL.Uniform2(loc, value.X, value.Y);
+    }
+
     public void Dispose()
     {
         if (_disposed) return;

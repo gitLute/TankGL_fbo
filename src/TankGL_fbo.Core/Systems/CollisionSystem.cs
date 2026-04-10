@@ -25,11 +25,82 @@ public sealed class CollisionSystem
         foreach (var tank in _tanks)
         {
             if (tank.IsDestroyed) continue;
+
+            Vector2 currentPos = tank.Position;
+            Vector2 prevPos = tank.PreviousPosition;
+            Vector2 delta = currentPos - prevPos;
+
+            Vector2 posAfterX = new Vector2(prevPos.X + delta.X, prevPos.Y);
+            var boundsAfterX = new RectAABB(posAfterX, tank.Bounds.HalfSize);
+            bool hitX = false;
             foreach (var wall in _walls)
             {
-                if (tank.Bounds.Intersects(wall.Bounds)) tank.Position = tank.PreviousPosition;
+                if (boundsAfterX.Intersects(wall.Bounds)) { hitX = true; break; }
+            }
+            Vector2 resolvedPos = hitX ? new Vector2(prevPos.X, prevPos.Y) : posAfterX;
+
+            Vector2 posAfterY = new Vector2(resolvedPos.X, prevPos.Y + delta.Y);
+            var boundsAfterY = new RectAABB(posAfterY, tank.Bounds.HalfSize);
+            bool hitY = false;
+            foreach (var wall in _walls)
+            {
+                if (boundsAfterY.Intersects(wall.Bounds)) { hitY = true; break; }
+            }
+            resolvedPos = hitY ? new Vector2(resolvedPos.X, prevPos.Y) : posAfterY;
+
+            tank.Position = resolvedPos;
+        }
+
+        for (int i = 0; i < _tanks.Count; i++)
+        {
+            var tankA = _tanks[i];
+            if (tankA.IsDestroyed) continue;
+
+            for (int j = i + 1; j < _tanks.Count; j++)
+            {
+                var tankB = _tanks[j];
+                if (tankB.IsDestroyed) continue;
+
+                if (tankA.Bounds.Intersects(tankB.Bounds))
+                {
+                    float dx = tankB.Position.X - tankA.Position.X;
+                    float dy = tankB.Position.Y - tankA.Position.Y;
+
+                    float overlapX = (tankA.Bounds.HalfSize.X + tankB.Bounds.HalfSize.X) - MathF.Abs(dx);
+                    float overlapY = (tankA.Bounds.HalfSize.Y + tankB.Bounds.HalfSize.Y) - MathF.Abs(dy);
+
+                    if (overlapX < overlapY)
+                    {
+                        float shift = overlapX / 2f;
+                        if (dx > 0)
+                        {
+                            tankA.Position = new Vector2(tankA.Position.X - shift, tankA.Position.Y);
+                            tankB.Position = new Vector2(tankB.Position.X + shift, tankB.Position.Y);
+                        }
+                        else
+                        {
+                            tankA.Position = new Vector2(tankA.Position.X + shift, tankA.Position.Y);
+                            tankB.Position = new Vector2(tankB.Position.X - shift, tankB.Position.Y);
+                        }
+                    }
+                    else
+                    {
+                        float shift = overlapY / 2f;
+                        if (dy > 0)
+                        {
+                            tankA.Position = new Vector2(tankA.Position.X, tankA.Position.Y - shift);
+                            tankB.Position = new Vector2(tankB.Position.X, tankB.Position.Y + shift);
+                        }
+                        else
+                        {
+                            tankA.Position = new Vector2(tankA.Position.X, tankA.Position.Y + shift);
+                            tankB.Position = new Vector2(tankB.Position.X, tankB.Position.Y - shift);
+                        }
+                    }
+                }
             }
         }
+
 
         for (int i = _bonuses.Count - 1; i >= 0; i--)
         {
@@ -65,7 +136,6 @@ public sealed class CollisionSystem
             {
                 var tank = _tanks[j];
                 if (tank.IsDestroyed) continue;
-
                 if (j == bullet.OwnerId) continue;
 
                 if (bullet.Bounds.Intersects(tank.Bounds))
