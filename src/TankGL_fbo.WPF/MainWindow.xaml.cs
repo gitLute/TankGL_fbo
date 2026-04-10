@@ -206,7 +206,7 @@ namespace TankGL_fbo.WPF
             var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
             
             
-            const float TileSize = 48f; 
+            const float TileSize = 28f; 
 
             foreach (var entity in renderList)
             {
@@ -221,7 +221,7 @@ namespace TankGL_fbo.WPF
                 if (entity is TankGL_fbo.Core.Entities.Wall)
                 {
                     
-                    float aspect = tex.Width / (float)tex.Height;
+                    float aspect = (float)tex.Width / (float)tex.Height;
                     uvScale = new OpenTK.Mathematics.Vector2(
                         renderWidth / TileSize, 
                         renderHeight * aspect / TileSize
