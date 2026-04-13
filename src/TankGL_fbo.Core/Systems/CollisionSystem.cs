@@ -37,6 +37,13 @@ public sealed class CollisionSystem
             {
                 if (boundsAfterX.Intersects(wall.Bounds)) { hitX = true; break; }
             }
+
+            foreach (var otherTank in _tanks)
+            {
+                if (otherTank.IsDestroyed) continue;
+                if (otherTank == tank) continue;
+                if (boundsAfterX.Intersects(otherTank.Bounds)) { hitX = true; break; }
+            }
             Vector2 resolvedPos = hitX ? new Vector2(prevPos.X, prevPos.Y) : posAfterX;
 
             Vector2 posAfterY = new Vector2(resolvedPos.X, prevPos.Y + delta.Y);
@@ -46,61 +53,17 @@ public sealed class CollisionSystem
             {
                 if (boundsAfterY.Intersects(wall.Bounds)) { hitY = true; break; }
             }
+
+            foreach (var otherTank in _tanks)
+            {
+                if (otherTank.IsDestroyed) continue;
+                if (otherTank == tank) continue;
+                if (boundsAfterY.Intersects(otherTank.Bounds)) { hitY = true; break; }
+            }
             resolvedPos = hitY ? new Vector2(resolvedPos.X, prevPos.Y) : posAfterY;
 
             tank.Position = resolvedPos;
         }
-
-        for (int i = 0; i < _tanks.Count; i++)
-        {
-            var tankA = _tanks[i];
-            if (tankA.IsDestroyed) continue;
-
-            for (int j = i + 1; j < _tanks.Count; j++)
-            {
-                var tankB = _tanks[j];
-                if (tankB.IsDestroyed) continue;
-
-                if (tankA.Bounds.Intersects(tankB.Bounds))
-                {
-                    float dx = tankB.Position.X - tankA.Position.X;
-                    float dy = tankB.Position.Y - tankA.Position.Y;
-
-                    float overlapX = (tankA.Bounds.HalfSize.X + tankB.Bounds.HalfSize.X) - MathF.Abs(dx);
-                    float overlapY = (tankA.Bounds.HalfSize.Y + tankB.Bounds.HalfSize.Y) - MathF.Abs(dy);
-
-                    if (overlapX < overlapY)
-                    {
-                        float shift = overlapX / 2f;
-                        if (dx > 0)
-                        {
-                            tankA.Position = new Vector2(tankA.Position.X - shift, tankA.Position.Y);
-                            tankB.Position = new Vector2(tankB.Position.X + shift, tankB.Position.Y);
-                        }
-                        else
-                        {
-                            tankA.Position = new Vector2(tankA.Position.X + shift, tankA.Position.Y);
-                            tankB.Position = new Vector2(tankB.Position.X - shift, tankB.Position.Y);
-                        }
-                    }
-                    else
-                    {
-                        float shift = overlapY / 2f;
-                        if (dy > 0)
-                        {
-                            tankA.Position = new Vector2(tankA.Position.X, tankA.Position.Y - shift);
-                            tankB.Position = new Vector2(tankB.Position.X, tankB.Position.Y + shift);
-                        }
-                        else
-                        {
-                            tankA.Position = new Vector2(tankA.Position.X, tankA.Position.Y + shift);
-                            tankB.Position = new Vector2(tankB.Position.X, tankB.Position.Y - shift);
-                        }
-                    }
-                }
-            }
-        }
-
 
         for (int i = _bonuses.Count - 1; i >= 0; i--)
         {
