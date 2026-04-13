@@ -15,6 +15,7 @@ using TankGL_fbo.Core.Entities;
 using TankGL_fbo.Core.Interfaces;
 using TankGL_fbo.Core.Patterns;
 using TankGL_fbo.Core.Patterns.Decorators;
+using TankGL_fbo.Core.Scenes;
 using TankGL_fbo.Core.Systems;
 using TankGL_fbo.WPF.Systems;
 using Vector2 = TankGL_fbo.Core.Contracts.Vector2;
@@ -23,7 +24,9 @@ namespace TankGL_fbo.WPF
 {
     public partial class MainWindow : Window
     {
-        private GameLoop _gameLoop = null!;
+
+        private SceneManager _sceneManager = null!;
+
         private AssetManager _assets = null!;
         private Shader _shader = null!;
         private GLControl _glControl = null!;
@@ -32,8 +35,8 @@ namespace TankGL_fbo.WPF
 
         private readonly Dictionary<int, HashSet<PlayerAction>> _activeInputs = new() { [0] = new(), [1] = new() };
         private readonly Dictionary<Key, (int playerId, PlayerAction action)> _keyMap = new();
-
         private readonly List<IRenderable> _renderQueue = new();
+
         private Matrix4 _projection;
         private readonly Stopwatch _stopwatch = new();
         private readonly DispatcherTimer _timer = new();
@@ -74,8 +77,6 @@ namespace TankGL_fbo.WPF
             _glControl.Paint += GlControl_Paint;
             _glControl.Resize += GlControl_Resize;
             _glControl.Dock = System.Windows.Forms.DockStyle.Fill;
-
-
             Host.Child = _glControl;
 
             _stopwatch.Start();
@@ -102,54 +103,8 @@ namespace TankGL_fbo.WPF
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-                var background = new Background(new Vector2(0, 0), new Vector2(400, 300), "tile.png");
-
-                List<Wall> CreateOuterWalls(Background bg, float thickness = 20f, float outerExtent = 10000f)
-                {
-                    var walls = new List<Wall>();
-                    var half = bg.Bounds.HalfSize;
-                    var center = bg.Position;
-                    float t2 = thickness / 2f;
-                    float huge = outerExtent / 2f;
-
-                    walls.Add(new Wall(
-                        new Vector2(center.X, center.Y - half.Y - t2 - huge),
-                        new Vector2(half.X + thickness + huge, huge + t2)
-                    ));
-
-                    walls.Add(new Wall(
-                        new Vector2(center.X, center.Y + half.Y + t2 + huge),
-                        new Vector2(half.X + thickness + huge, huge + t2)
-                    ));
-
-                    walls.Add(new Wall(
-                        new Vector2(center.X - half.X - t2 - huge, center.Y),
-                        new Vector2(huge + t2, half.Y)
-                    ));
-
-                    walls.Add(new Wall(
-                        new Vector2(center.X + half.X + t2 + huge, center.Y),
-                        new Vector2(huge + t2, half.Y)
-                    ));
-
-                    return walls;
-                }
-
-                var walls = CreateOuterWalls(background);
-
-                walls.Add(new Wall(new Vector2(-150, 150), new Vector2(60, 20)));
-                walls.Add(new Wall(new Vector2(150, -150), new Vector2(60, 20)));
-
-                var tanks = new List<Tank>
-                {
-                    new(new Vector2(-250, 0), "tank_red.png", new BaseStats()),
-                    new(new Vector2(250, 0), "tank_blue.png", new BaseStats())
-                };
-
-                var backgrounds = new List<Background> { background };
-
-                _gameLoop = new GameLoop(tanks, new List<Bullet>(), walls, new List<Bonus>(), backgrounds);
-                _gameLoop.RenderReady += OnRenderReady;
+                _sceneManager = new SceneManager();
+                _sceneManager.ChangeScene(new GameScene());
 
                 _isInitialized = true;
                 GlControl_Resize(_glControl, EventArgs.Empty);
@@ -163,24 +118,26 @@ namespace TankGL_fbo.WPF
 
         private void GameTimer_Tick(object? sender, EventArgs e)
         {
-            if (!_isInitialized || _gameLoop == null) return;
+            if (!_isInitialized) return;
 
             float dt = (float)_stopwatch.Elapsed.TotalSeconds;
             _stopwatch.Restart();
 
-            _gameLoop.Tick(_activeInputs, Math.Min(dt, 0.1f));
-
+            _sceneManager.Update(Math.Min(dt, 0.1f), _activeInputs);
             _glControl.Invalidate();
         }
 
         private void UpdateHud()
         {
-            if (_gameLoop != null && _gameLoop.Tanks.Count >= 2 && _textRenderer != null)
-            {
-                var tank1 = _gameLoop.Tanks[0];
-                var tank2 = _gameLoop.Tanks[1];
 
-                static string GetBonusInfo(Tank tank)
+            if (_sceneManager.CurrentScene is GameScene gameScene &&
+                gameScene.Tanks.Count >= 2 &&
+                _textRenderer != null)
+            {
+                var tank1 = gameScene.Tanks[0];
+                var tank2 = gameScene.Tanks[1];
+
+                static string GetBonusInfo(TankGL_fbo.Core.Entities.Tank tank)
                 {
                     if (tank.Stats is TankGL_fbo.Core.Patterns.Decorators.StatDecorator dec && !dec.IsExpired)
                     {
@@ -191,31 +148,24 @@ namespace TankGL_fbo.WPF
                 }
 
                 string statsPl1 = $"P1 HP: {(int)Math.Max(0, tank1.HP)}\n" +
-                                $"Ammo: {tank1.Stats.Ammo}\n" +
-                                $"Fuel: {(int)tank1.Stats.Fuel}\n" +
-                                $"Spd: {(int)tank1.Stats.Speed}\n" +
-                                $"Arm: {(int)tank1.Stats.Armor}\n" +
-                                $"Dmg: {(int)tank1.Stats.Damage}\n" +
-                                $"{GetBonusInfo(tank1)}";
+                                  $"Ammo: {tank1.Stats.Ammo}\n" +
+                                  $"Fuel: {(int)tank1.Stats.Fuel}\n" +
+                                  $"Spd: {(int)tank1.Stats.Speed}\n" +
+                                  $"Arm: {(int)tank1.Stats.Armor}\n" +
+                                  $"Dmg: {(int)tank1.Stats.Damage}\n" +
+                                  $"{GetBonusInfo(tank1)}";
 
                 string statsPl2 = $"P2 HP: {(int)Math.Max(0, tank2.HP)}\n" +
-                                $"Ammo: {tank2.Stats.Ammo}\n" +
-                                $"Fuel: {(int)tank2.Stats.Fuel}\n" +
-                                $"Spd: {(int)tank2.Stats.Speed}\n" +
-                                $"Arm: {(int)tank2.Stats.Armor}\n" +
-                                $"Dmg: {(int)tank2.Stats.Damage}\n" +
-                                $"{GetBonusInfo(tank2)}";
+                                  $"Ammo: {tank2.Stats.Ammo}\n" +
+                                  $"Fuel: {(int)tank2.Stats.Fuel}\n" +
+                                  $"Spd: {(int)tank2.Stats.Speed}\n" +
+                                  $"Arm: {(int)tank2.Stats.Armor}\n" +
+                                  $"Dmg: {(int)tank2.Stats.Damage}\n" +
+                                  $"{GetBonusInfo(tank2)}";
 
                 _textRenderer.DrawText(statsPl1, 50, 50, 16, Host.Child.Width, Host.Child.Height);
-
                 _textRenderer.DrawText(statsPl2, Host.Child.Width - 250, 50, 16, Host.Child.Width, Host.Child.Height);
             }
-        }
-
-        private void OnRenderReady(IEnumerable<IRenderable> entities)
-        {
-            _renderQueue.Clear();
-            _renderQueue.AddRange(entities);
         }
 
         private void GlControl_Resize(object? sender, EventArgs e)
@@ -231,14 +181,18 @@ namespace TankGL_fbo.WPF
         private void GlControl_Paint(object? sender, PaintEventArgs e)
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
+
             _glControl.MakeCurrent();
             GL.Clear(ClearBufferMask.ColorBufferBit);
+
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
 
+
+            _renderQueue.Clear();
+            _sceneManager.CollectRenderables(_renderQueue);
+
             var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
-
-
             const float TileSize = 50f;
 
             foreach (var entity in renderList)
@@ -248,7 +202,6 @@ namespace TankGL_fbo.WPF
 
                 float renderWidth = entity.Bounds.HalfSize.X * 2f;
                 float renderHeight = entity.Bounds.HalfSize.Y * 2f;
-
 
                 OpenTK.Mathematics.Vector2 uvScale;
                 if (entity is TankGL_fbo.Core.Entities.Wall || entity is TankGL_fbo.Core.Entities.Background)
@@ -261,17 +214,15 @@ namespace TankGL_fbo.WPF
                 }
                 else
                 {
-
                     uvScale = new OpenTK.Mathematics.Vector2(1f, 1f);
                 }
-
-
 
                 _shader.SetVector2("uUvScale", uvScale);
 
                 var model = Matrix4.CreateScale(renderWidth, renderHeight, 1.0f) *
                             Matrix4.CreateRotationZ(entity.Rotation) *
                             Matrix4.CreateTranslation(entity.Position.X, entity.Position.Y, 0);
+
                 _shader.SetMatrix4("uModel", model);
 
                 tex.Use();
@@ -279,35 +230,38 @@ namespace TankGL_fbo.WPF
                 _assets.Quad.Draw();
             }
 
-
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
             GL.BindTexture(TextureTarget.Texture2D, 0);
+
             foreach (var entity in renderList)
             {
                 var boxWidth = entity.Bounds.HalfSize.X * 2;
                 var boxHeight = entity.Bounds.HalfSize.Y * 2;
+
                 var debugModel = Matrix4.CreateScale(boxWidth, boxHeight, 1.0f) *
-                                Matrix4.CreateTranslation(entity.Bounds.Center.X, entity.Bounds.Center.Y, 0);
+                                 Matrix4.CreateTranslation(entity.Bounds.Center.X, entity.Bounds.Center.Y, 0);
+
                 _shader.SetMatrix4("uModel", debugModel);
                 _assets.Quad.Draw();
             }
-            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
 
+            GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
             GL.UseProgram(0);
+
             UpdateHud();
             _glControl.SwapBuffers();
         }
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+
             if (_keyMap.TryGetValue(e.Key, out var map))
             {
                 _activeInputs[map.playerId].Add(map.action);
                 return;
             }
 
-
-            if (_gameLoop != null)
+            if (_sceneManager.CurrentScene is GameScene gameScene)
             {
                 BonusType? bonus = e.Key switch
                 {
@@ -321,16 +275,18 @@ namespace TankGL_fbo.WPF
 
                 if (bonus.HasValue)
                 {
-
                     int tankIndex = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) ? 1 : 0;
-                    _gameLoop.ApplyBonus(tankIndex, bonus.Value);
+                    gameScene.ApplyBonus(tankIndex, bonus.Value);
                 }
             }
         }
 
         private void Window_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (_keyMap.TryGetValue(e.Key, out var map)) _activeInputs[map.playerId].Remove(map.action);
+            if (_keyMap.TryGetValue(e.Key, out var map))
+            {
+                _activeInputs[map.playerId].Remove(map.action);
+            }
         }
     }
 }
