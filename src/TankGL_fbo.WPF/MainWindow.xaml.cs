@@ -102,27 +102,56 @@ namespace TankGL_fbo.WPF
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
+                var background = new Background(new Vector2(0, 0), new Vector2(400, 300), "tile.png");
+
+                List<Wall> CreateOuterWalls(Background bg, float thickness = 20f, float outerExtent = 10000f)
+                {
+                    var walls = new List<Wall>();
+                    var half = bg.Bounds.HalfSize;
+                    var center = bg.Position;
+                    float t2 = thickness / 2f;
+                    float huge = outerExtent / 2f;
+
+                    walls.Add(new Wall(
+                        new Vector2(center.X, center.Y - half.Y - t2 - huge),
+                        new Vector2(half.X + thickness + huge, huge + t2)
+                    ));
+
+                    walls.Add(new Wall(
+                        new Vector2(center.X, center.Y + half.Y + t2 + huge),
+                        new Vector2(half.X + thickness + huge, huge + t2)
+                    ));
+
+                    walls.Add(new Wall(
+                        new Vector2(center.X - half.X - t2 - huge, center.Y),
+                        new Vector2(huge + t2, half.Y)
+                    ));
+
+                    walls.Add(new Wall(
+                        new Vector2(center.X + half.X + t2 + huge, center.Y),
+                        new Vector2(huge + t2, half.Y)
+                    ));
+
+                    return walls;
+                }
+
+                var walls = CreateOuterWalls(background);
+
+                walls.Add(new Wall(new Vector2(-150, 150), new Vector2(60, 20)));
+                walls.Add(new Wall(new Vector2(150, -150), new Vector2(60, 20)));
+
                 var tanks = new List<Tank>
                 {
                     new(new Vector2(-250, 0), "tank_red.png", new BaseStats()),
                     new(new Vector2(250, 0), "tank_blue.png", new BaseStats())
                 };
 
-                var backgrounds = new List<Background>
-                {
-                    new Background(new Vector2(0, 0), new Vector2(400, 300), "tile.png")
-                };
+                var backgrounds = new List<Background> { background };
 
-                _gameLoop = new GameLoop(tanks, new List<Bullet>(), new List<Wall>
-                {
-                    new(new Vector2(0, 0), new Vector2(20, 100)),
-                    new(new Vector2(-150, 150), new Vector2(60, 20)),
-                    new(new Vector2(150, -150), new Vector2(60, 20))
-                }, new List<Bonus>(), backgrounds);
-
+                _gameLoop = new GameLoop(tanks, new List<Bullet>(), walls, new List<Bonus>(), backgrounds);
                 _gameLoop.RenderReady += OnRenderReady;
-                _isInitialized = true;
 
+                _isInitialized = true;
                 GlControl_Resize(_glControl, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -236,7 +265,7 @@ namespace TankGL_fbo.WPF
                     uvScale = new OpenTK.Mathematics.Vector2(1f, 1f);
                 }
 
-                // var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
+
 
                 _shader.SetVector2("uUvScale", uvScale);
 

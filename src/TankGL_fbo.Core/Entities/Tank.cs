@@ -47,7 +47,7 @@ public sealed class Tank : IUpdatable, IRenderable
 
         Vector2 displacement = direction.Normalized() * Stats.Speed * deltaTime;
         Position += displacement;
-        Stats.Fuel -= MathF.Abs(displacement.Length()) * 0.02f;
+        Stats.Fuel -= MathF.Abs(displacement.Length()) * 0.01f;
         if (Stats.Fuel < 0) Stats.Fuel = 0;
     }
 
