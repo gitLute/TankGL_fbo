@@ -13,11 +13,10 @@ using OpenTK.Windowing.Common;
 using TankGL_fbo.Core.Contracts;
 using TankGL_fbo.Core.Entities;
 using TankGL_fbo.Core.Interfaces;
+using TankGL_fbo.Core.Patterns;
 using TankGL_fbo.Core.Patterns.Decorators;
 using TankGL_fbo.Core.Systems;
 using TankGL_fbo.WPF.Systems;
-using TankGL_fbo.Core.Patterns;
-
 using Vector2 = TankGL_fbo.Core.Contracts.Vector2;
 
 namespace TankGL_fbo.WPF
@@ -109,12 +108,17 @@ namespace TankGL_fbo.WPF
                     new(new Vector2(250, 0), "tank_blue.png", new BaseStats())
                 };
 
+                var backgrounds = new List<Background>
+                {
+                    new Background(new Vector2(0, 0), new Vector2(400, 300), "tile.png")
+                };
+
                 _gameLoop = new GameLoop(tanks, new List<Bullet>(), new List<Wall>
                 {
                     new(new Vector2(0, 0), new Vector2(20, 100)),
                     new(new Vector2(-150, 150), new Vector2(60, 20)),
                     new(new Vector2(150, -150), new Vector2(60, 20))
-                }, new List<Bonus>());
+                }, new List<Bonus>(), backgrounds);
 
                 _gameLoop.RenderReady += OnRenderReady;
                 _isInitialized = true;
@@ -202,63 +206,64 @@ namespace TankGL_fbo.WPF
             GL.Clear(ClearBufferMask.ColorBufferBit);
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
-            
+
             var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
-            
-            
-            const float TileSize = 50f; 
+
+
+            const float TileSize = 50f;
 
             foreach (var entity in renderList)
             {
                 var tex = _assets.LoadTexture(entity.TexturePath);
                 if (tex == null) continue;
-                
+
                 float renderWidth = entity.Bounds.HalfSize.X * 2f;
                 float renderHeight = entity.Bounds.HalfSize.Y * 2f;
-                
-                
+
+
                 OpenTK.Mathematics.Vector2 uvScale;
-                if (entity is TankGL_fbo.Core.Entities.Wall)
+                if (entity is TankGL_fbo.Core.Entities.Wall || entity is TankGL_fbo.Core.Entities.Background)
                 {
-                    
                     float aspect = (float)tex.Width / (float)tex.Height;
                     uvScale = new OpenTK.Mathematics.Vector2(
-                        renderWidth / TileSize, 
+                        renderWidth / TileSize,
                         renderHeight * aspect / TileSize
                     );
                 }
                 else
                 {
-                    
+
                     uvScale = new OpenTK.Mathematics.Vector2(1f, 1f);
                 }
-                
-                _shader.SetVector2("uUvScale", uvScale); 
-                
+
+                // var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
+
+                _shader.SetVector2("uUvScale", uvScale);
+
                 var model = Matrix4.CreateScale(renderWidth, renderHeight, 1.0f) *
                             Matrix4.CreateRotationZ(entity.Rotation) *
                             Matrix4.CreateTranslation(entity.Position.X, entity.Position.Y, 0);
                 _shader.SetMatrix4("uModel", model);
-                
+
                 tex.Use();
                 _assets.Quad.Bind();
                 _assets.Quad.Draw();
             }
 
-            
+
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
             GL.BindTexture(TextureTarget.Texture2D, 0);
             foreach (var entity in renderList)
             {
                 var boxWidth = entity.Bounds.HalfSize.X * 2;
                 var boxHeight = entity.Bounds.HalfSize.Y * 2;
-                var debugModel = Matrix4.CreateScale(boxWidth, boxHeight, 1.0f) * 
+                var debugModel = Matrix4.CreateScale(boxWidth, boxHeight, 1.0f) *
                                 Matrix4.CreateTranslation(entity.Bounds.Center.X, entity.Bounds.Center.Y, 0);
                 _shader.SetMatrix4("uModel", debugModel);
                 _assets.Quad.Draw();
             }
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            
+
             GL.UseProgram(0);
             UpdateHud();
             _glControl.SwapBuffers();
@@ -272,7 +277,7 @@ namespace TankGL_fbo.WPF
                 return;
             }
 
-            
+
             if (_gameLoop != null)
             {
                 BonusType? bonus = e.Key switch
@@ -287,7 +292,7 @@ namespace TankGL_fbo.WPF
 
                 if (bonus.HasValue)
                 {
-                    
+
                     int tankIndex = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) ? 1 : 0;
                     _gameLoop.ApplyBonus(tankIndex, bonus.Value);
                 }

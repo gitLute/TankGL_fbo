@@ -12,6 +12,7 @@ public sealed class GameLoop
     private readonly List<Bullet> _bullets;
     private readonly List<Wall> _walls;
     private readonly List<Bonus> _bonuses;
+    private readonly List<Background> _backgrounds;
 
     private readonly InputSystem _input;
     private readonly CollisionSystem _collision;
@@ -22,12 +23,13 @@ public sealed class GameLoop
 
     public event Action<IEnumerable<IRenderable>>? RenderReady;
 
-    public GameLoop(List<Tank> tanks, List<Bullet> bullets, List<Wall> walls, List<Bonus> bonuses)
+    public GameLoop(List<Tank> tanks, List<Bullet> bullets, List<Wall> walls, List<Bonus> bonuses, List<Background> backgrounds)
     {
         _tanks = tanks;
         _bullets = bullets;
         _walls = walls;
         _bonuses = bonuses;
+        _backgrounds = backgrounds;
 
         _input = new InputSystem(_tanks, _bullets);
         _collision = new CollisionSystem(_tanks, _walls, _bonuses, _bullets);
@@ -58,8 +60,9 @@ public sealed class GameLoop
             _accumulator -= FixedDt;
         }
 
-        var renderables = new List<IRenderable>(_tanks.Count + _bullets.Count + _walls.Count + _bonuses.Count);
+        var renderables = new List<IRenderable>(_tanks.Count + _bullets.Count + _walls.Count + _bonuses.Count + _backgrounds.Count);
 
+        renderables.AddRange(_backgrounds);
         renderables.AddRange(_walls);
         renderables.AddRange(_tanks.Where(t => !t.IsDestroyed));
         renderables.AddRange(_bonuses);

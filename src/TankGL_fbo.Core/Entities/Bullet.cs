@@ -15,7 +15,7 @@ public sealed class Bullet : IUpdatable, IRenderable
 
     public float Lifetime { get; internal set; }
     public float Damage { get; }
-    public RectAABB Bounds => new(Position, new Vector2(4f, 4f));
+    public RectAABB Bounds => new(Position, new Vector2(6f, 6f));
     public bool IsExpired => Lifetime <= 0;
 
     private readonly Vector2 _velocity;

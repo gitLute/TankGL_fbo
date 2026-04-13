@@ -10,7 +10,7 @@ public sealed class Bonus : IUpdatable, IRenderable
     public BonusType Type { get; }
     public float Lifetime { get; internal set; }
 
-    public RectAABB Bounds => new(Position, new Vector2(14f, 14f));
+    public RectAABB Bounds => new(Position, new Vector2(24f, 24f));
 
     public string TexturePath => Type switch
     {
