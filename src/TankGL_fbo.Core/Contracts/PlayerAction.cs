@@ -4,5 +4,6 @@ public enum PlayerAction
 {
     MoveUp, MoveDown, MoveLeft, MoveRight,
     RotateLeft, RotateRight,
-    Fire
+    Fire,
+    Confirm
 }

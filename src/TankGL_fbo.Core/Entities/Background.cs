@@ -21,10 +21,13 @@ public sealed class Background : IRenderable
     public string TexturePath { get; }
     public RectAABB Bounds { get; }
 
-    public Background(Vector2 position, Vector2 halfSize, string texturePath)
+    public bool Tile { get; }
+
+    public Background(Vector2 position, Vector2 halfSize, string texturePath, bool tile = true)
     {
         Position = position;
         TexturePath = texturePath;
         Bounds = new RectAABB(position, halfSize);
+        Tile = tile;
     }
 }

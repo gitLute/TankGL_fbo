@@ -52,12 +52,16 @@ namespace TankGL_fbo.WPF
             _keyMap[Key.A] = (0, PlayerAction.RotateLeft);
             _keyMap[Key.D] = (0, PlayerAction.RotateRight);
             _keyMap[Key.Space] = (0, PlayerAction.Fire);
+            _keyMap[Key.LeftCtrl] = (0, PlayerAction.Fire);
 
             _keyMap[Key.Up] = (1, PlayerAction.MoveUp);
             _keyMap[Key.Down] = (1, PlayerAction.MoveDown);
             _keyMap[Key.Left] = (1, PlayerAction.RotateLeft);
             _keyMap[Key.Right] = (1, PlayerAction.RotateRight);
-            _keyMap[Key.Enter] = (1, PlayerAction.Fire);
+            _keyMap[Key.RightShift] = (1, PlayerAction.Fire);
+            _keyMap[Key.RightCtrl] = (1, PlayerAction.Fire);
+
+            _keyMap[Key.E] = (0, PlayerAction.Confirm);
         }
 
         [Obsolete]
@@ -161,7 +165,7 @@ namespace TankGL_fbo.WPF
                                   $"{GetBonusInfo(tank2)}";
 
                 _textRenderer.DrawText(statsPl1, 50, 50, 16, Host.Child.Width, Host.Child.Height);
-                _textRenderer.DrawText(statsPl2, Host.Child.Width - 250, 50, 16, Host.Child.Width, Host.Child.Height);
+                _textRenderer.DrawText(statsPl2, 50, Host.Child.Height / 2 - 50, 16, Host.Child.Width, Host.Child.Height);
             }
 
             if (_sceneManager.CurrentScene is MenuSceneBase menuScene && _textRenderer != null)
@@ -173,7 +177,13 @@ namespace TankGL_fbo.WPF
                     string text = i == selected ? $"> {items[i]} <" : items[i];
                     _textRenderer.DrawText(text, 550, y + i * 40, 24, Host.Child.Width, Host.Child.Height);
                 }
+                _textRenderer.DrawText("input:\nTANK_1 WASD SPACE LCTRL\nTANK_2 ARROWS RSHIFT RCTRL\nMENU E - select", 50, 50, 16, Host.Child.Width, Host.Child.Height);
             }
+
+            // if (_sceneManager.CurrentScene is InfoScene && _textRenderer != null)
+            // {
+            //     _textRenderer.DrawText("Press FIRE to return", 50, 50, 16, Host.Child.Width, Host.Child.Height);
+            // }
         }
 
         private void GlControl_Resize(object? sender, EventArgs e)
@@ -211,7 +221,7 @@ namespace TankGL_fbo.WPF
                 float renderHeight = entity.Bounds.HalfSize.Y * 2f;
 
                 OpenTK.Mathematics.Vector2 uvScale;
-                if (entity is TankGL_fbo.Core.Entities.Wall || entity is TankGL_fbo.Core.Entities.Background)
+                if (entity is TankGL_fbo.Core.Entities.Wall || (entity is TankGL_fbo.Core.Entities.Background bg && bg.Tile))
                 {
                     float aspect = (float)tex.Width / (float)tex.Height;
                     uvScale = new OpenTK.Mathematics.Vector2(
@@ -261,17 +271,33 @@ namespace TankGL_fbo.WPF
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            if (e.Key == Key.F12)
+            {
+                Action<IScene> changeScene = scene => _sceneManager.ChangeScene(scene);
+                _sceneManager.ChangeScene(new MenuScene(changeScene));
+                return;
+            }
+
+            if (e.Key == Key.F1)
+            {
+                Action<IScene> changeScene = scene => _sceneManager.ChangeScene(scene);
+
+                // _sceneManager.ChangeScene(new InfoScene(changeScene, "info.png", new Vector2(400, 300)));
+                _sceneManager.ChangeScene(new InfoScene(changeScene));
+                return;
+            }
+
             if (_keyMap.TryGetValue(e.Key, out var map))
             {
                 _activeInputs[map.playerId].Add(map.action);
                 return;
             }
 
-            if (e.Key == Key.Escape && _sceneManager.CurrentScene is LevelScene levelScene)
-            {
-                levelScene.RequestReturnToMenu();
-                return;
-            }
+            // if (e.Key == Key.Escape && _sceneManager.CurrentScene is LevelScene levelScene)
+            // {
+            //     levelScene.RequestReturnToMenu();
+            //     return;
+            // }
 
             if (_sceneManager.CurrentScene is LevelScene gameLevel)
             {

@@ -59,7 +59,7 @@ public abstract class MenuSceneBase : IScene
                 InputCooldown = CooldownTime;
             }
 
-            if (actions.Contains(PlayerAction.Fire) && InputCooldown <= 0)
+            if (actions.Contains(PlayerAction.Confirm) && InputCooldown <= 0)
             {
                 OnItemSelected(SelectedIndex);
                 InputCooldown = CooldownTime;
