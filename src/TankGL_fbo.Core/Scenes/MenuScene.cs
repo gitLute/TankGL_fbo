@@ -22,7 +22,7 @@ public sealed class MenuScene : MenuSceneBase
 
                 break;
             case 2:
-
+                Environment.Exit(0);
                 break;
         }
     }

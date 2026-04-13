@@ -164,8 +164,8 @@ namespace TankGL_fbo.WPF
                                   $"Dmg: {(int)tank2.Stats.Damage}\n" +
                                   $"{GetBonusInfo(tank2)}";
 
-                _textRenderer.DrawText(statsPl1, 50, 50, 16, Host.Child.Width, Host.Child.Height);
-                _textRenderer.DrawText(statsPl2, 50, Host.Child.Height / 2 - 50, 16, Host.Child.Width, Host.Child.Height);
+                _textRenderer.DrawText(statsPl1, 50, Host.Child.Height / 4, 16, Host.Child.Width, Host.Child.Height);
+                _textRenderer.DrawText(statsPl2, 50, Host.Child.Height / 2, 16, Host.Child.Width, Host.Child.Height);
             }
 
             if (_sceneManager.CurrentScene is MenuSceneBase menuScene && _textRenderer != null)
@@ -177,7 +177,7 @@ namespace TankGL_fbo.WPF
                     string text = i == selected ? $"> {items[i]} <" : items[i];
                     _textRenderer.DrawText(text, 550, y + i * 40, 24, Host.Child.Width, Host.Child.Height);
                 }
-                _textRenderer.DrawText("input:\nTANK_1 WASD SPACE LCTRL\nTANK_2 ARROWS RSHIFT RCTRL\nMENU E - select", 50, 50, 16, Host.Child.Width, Host.Child.Height);
+                _textRenderer.DrawText("input:\nTANK_1 WASD SPACE LCTRL\nTANK_2 ARROWS RSHIFT RCTRL\nMENU WASD E", 50, 50, 16, Host.Child.Width, Host.Child.Height);
             }
 
             // if (_sceneManager.CurrentScene is InfoScene && _textRenderer != null)
