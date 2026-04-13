@@ -24,9 +24,7 @@ namespace TankGL_fbo.WPF
 {
     public partial class MainWindow : Window
     {
-
         private SceneManager _sceneManager = null!;
-
         private AssetManager _assets = null!;
         private Shader _shader = null!;
         private GLControl _glControl = null!;
@@ -104,7 +102,9 @@ namespace TankGL_fbo.WPF
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
                 _sceneManager = new SceneManager();
-                _sceneManager.ChangeScene(new GameScene());
+
+                Action<IScene> changeScene = scene => _sceneManager.ChangeScene(scene);
+                _sceneManager.ChangeScene(new MenuScene(changeScene));
 
                 _isInitialized = true;
                 GlControl_Resize(_glControl, EventArgs.Empty);
@@ -119,23 +119,20 @@ namespace TankGL_fbo.WPF
         private void GameTimer_Tick(object? sender, EventArgs e)
         {
             if (!_isInitialized) return;
-
             float dt = (float)_stopwatch.Elapsed.TotalSeconds;
             _stopwatch.Restart();
-
             _sceneManager.Update(Math.Min(dt, 0.1f), _activeInputs);
             _glControl.Invalidate();
         }
 
         private void UpdateHud()
         {
-
-            if (_sceneManager.CurrentScene is GameScene gameScene &&
-                gameScene.Tanks.Count >= 2 &&
+            if (_sceneManager.CurrentScene is LevelScene levelScene &&
+                levelScene.PublicTanks.Count >= 2 &&
                 _textRenderer != null)
             {
-                var tank1 = gameScene.Tanks[0];
-                var tank2 = gameScene.Tanks[1];
+                var tank1 = levelScene.PublicTanks[0];
+                var tank2 = levelScene.PublicTanks[1];
 
                 static string GetBonusInfo(TankGL_fbo.Core.Entities.Tank tank)
                 {
@@ -166,6 +163,17 @@ namespace TankGL_fbo.WPF
                 _textRenderer.DrawText(statsPl1, 50, 50, 16, Host.Child.Width, Host.Child.Height);
                 _textRenderer.DrawText(statsPl2, Host.Child.Width - 250, 50, 16, Host.Child.Width, Host.Child.Height);
             }
+
+            if (_sceneManager.CurrentScene is MenuSceneBase menuScene && _textRenderer != null)
+            {
+                var (items, selected) = menuScene.GetMenuState();
+                float y = 200;
+                for (int i = 0; i < items.Length; i++)
+                {
+                    string text = i == selected ? $"> {items[i]} <" : items[i];
+                    _textRenderer.DrawText(text, 550, y + i * 40, 24, Host.Child.Width, Host.Child.Height);
+                }
+            }
         }
 
         private void GlControl_Resize(object? sender, EventArgs e)
@@ -187,7 +195,6 @@ namespace TankGL_fbo.WPF
 
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
-
 
             _renderQueue.Clear();
             _sceneManager.CollectRenderables(_renderQueue);
@@ -254,14 +261,19 @@ namespace TankGL_fbo.WPF
 
         private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-
             if (_keyMap.TryGetValue(e.Key, out var map))
             {
                 _activeInputs[map.playerId].Add(map.action);
                 return;
             }
 
-            if (_sceneManager.CurrentScene is GameScene gameScene)
+            if (e.Key == Key.Escape && _sceneManager.CurrentScene is LevelScene levelScene)
+            {
+                levelScene.RequestReturnToMenu();
+                return;
+            }
+
+            if (_sceneManager.CurrentScene is LevelScene gameLevel)
             {
                 BonusType? bonus = e.Key switch
                 {
@@ -276,7 +288,7 @@ namespace TankGL_fbo.WPF
                 if (bonus.HasValue)
                 {
                     int tankIndex = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) ? 1 : 0;
-                    gameScene.ApplyBonus(tankIndex, bonus.Value);
+                    gameLevel.ApplyBonus(tankIndex, bonus.Value);
                 }
             }
         }
