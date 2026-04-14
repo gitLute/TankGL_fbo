@@ -9,7 +9,10 @@
     <PackageReference Include="OpenTK" Version="4.9.4" />
     <PackageReference Include="OpenTK.GLControl" Version="4.0.2" />
     <PackageReference Include="StbImageSharp" Version="2.30.15" />
-    <None Include="Assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Assets\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Assets\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
   </ItemGroup>
 
   <PropertyGroup>
