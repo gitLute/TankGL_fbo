@@ -19,7 +19,7 @@ public sealed class MenuScene : MenuSceneBase
                 RequestSceneChange?.Invoke(new Level1Scene(RequestSceneChange));
                 break;
             case 1:
-
+                RequestSceneChange?.Invoke(new OptionsScene(RequestSceneChange));
                 break;
             case 2:
                 Environment.Exit(0);

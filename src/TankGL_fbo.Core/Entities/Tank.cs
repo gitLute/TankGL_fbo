@@ -37,7 +37,16 @@ public sealed class Tank : IUpdatable, IRenderable
     {
         PreviousPosition = Position;
 
-        if (Stats is IUpdatable updatable) updatable.Update(deltaTime);
+        if (Stats is IUpdatable updatable)
+        {
+            updatable.Update(deltaTime);
+        }
+
+        while (Stats is Patterns.Decorators.StatDecorator dec && dec.IsExpired)
+        {
+            Stats = dec.Wrapped;
+        }
+
         if (CooldownTimer > 0) CooldownTimer -= deltaTime;
     }
 

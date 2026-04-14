@@ -30,7 +30,7 @@ public abstract class MenuSceneBase : IScene
     {
         _backgrounds.Add(CreateBackground());
         SelectedIndex = 0;
-        InputCooldown = 0f;
+        InputCooldown = 0.5f;
     }
 
     public virtual void OnExit()

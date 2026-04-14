@@ -92,6 +92,8 @@ namespace TankGL_fbo.WPF
             if (_glControl == null) return;
             _glControl.MakeCurrent();
 
+            ConfigManager.Load();
+
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
             _assets = new AssetManager(assetsPath);
 

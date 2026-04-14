@@ -116,14 +116,44 @@ public sealed class CollisionSystem
         switch (type)
         {
             case BonusType.SpeedUp:
-                tank.Stats = new SpeedDecorator(tank.Stats, 1.5f, 10f);
-                break;
+                {
+                    var existing = StatDecorator.FindInChain<SpeedDecorator>(tank.Stats);
+                    if (existing != null)
+                    {
+                        existing.Refresh(10f);
+                    }
+                    else
+                    {
+                        tank.Stats = new SpeedDecorator(tank.Stats, 1.5f, 10f);
+                    }
+                    break;
+                }
             case BonusType.Shield:
-                tank.Stats = new ArmorDecorator(tank.Stats, 20f, 8f);
-                break;
+                {
+                    var existing = StatDecorator.FindInChain<ArmorDecorator>(tank.Stats);
+                    if (existing != null)
+                    {
+                        existing.Refresh(8f);
+                    }
+                    else
+                    {
+                        tank.Stats = new ArmorDecorator(tank.Stats, 20f, 8f);
+                    }
+                    break;
+                }
             case BonusType.DamageBoost:
-                tank.Stats = new DamageDecorator(tank.Stats, 1.8f, 7f);
-                break;
+                {
+                    var existing = StatDecorator.FindInChain<DamageDecorator>(tank.Stats);
+                    if (existing != null)
+                    {
+                        existing.Refresh(7f);
+                    }
+                    else
+                    {
+                        tank.Stats = new DamageDecorator(tank.Stats, 1.8f, 7f);
+                    }
+                    break;
+                }
             case BonusType.AmmoRefill:
                 tank.Stats.Ammo = Math.Min(tank.Stats.Ammo + 15, 40);
                 break;
