@@ -30,7 +30,7 @@ public sealed class OptionsScene : MenuSceneBase
 
     protected override string[] GetMenuItems()
     {
-        _menuItems[0] = $"";
+        _menuItems[0] = $"Debug Mode: {(ConfigManager.Config.DebugMode ? "ON" : "OFF")}";
         _menuItems[1] = $"";
         _menuItems[2] = $"";
         _menuItems[3] = "Reset to Default";
@@ -43,22 +43,17 @@ public sealed class OptionsScene : MenuSceneBase
         switch (index)
         {
             case 0:
-
+                ConfigManager.Config.DebugMode = !ConfigManager.Config.DebugMode;
+                _unsavedChanges = true;
                 break;
-
             case 1:
-
                 break;
-
             case 2:
-
                 break;
-
             case 3:
                 ConfigManager.Config = new GameConfig();
                 _unsavedChanges = true;
                 break;
-
             case 4:
                 RequestSceneChange?.Invoke(new MenuScene(RequestSceneChange));
                 break;
