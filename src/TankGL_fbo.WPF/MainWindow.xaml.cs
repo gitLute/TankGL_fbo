@@ -237,6 +237,9 @@ namespace TankGL_fbo.WPF
 
         private void RenderScene()
         {
+            GL.Enable(EnableCap.Blend);
+            GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
 
