@@ -22,15 +22,18 @@ public abstract class LevelScene : IScene
     private InputSystem _inputSystem = null!;
     private CollisionSystem _collisionSystem = null!;
     private SpawnSystem _spawnSystem = null!;
-
     private double _accumulator;
     private const double FixedDt = 1.0 / 60.0;
-
     private readonly Action<IScene>? _requestSceneChange;
-
     private bool _levelCompleted;
 
+    private float _hudUpdateTimer = 0f;
+    private const float HudUpdateInterval = 0.1f;
+
     public IReadOnlyList<Tank> PublicTanks => Tanks;
+
+    public event EventHandler<(string p1Stats, string p2Stats)>? HudDataUpdated;
+
 
     protected LevelScene(Action<IScene>? requestSceneChange = null)
     {
@@ -41,9 +44,7 @@ public abstract class LevelScene : IScene
     {
         var background = new Background(new Vector2(0, 0), new Vector2(400, 300), "tile.png");
         Backgrounds.Add(background);
-
         Walls.AddRange(CreateOuterWalls(background));
-
         SetupLevel();
 
         _inputSystem = new InputSystem(Tanks, Bullets);
@@ -54,6 +55,8 @@ public abstract class LevelScene : IScene
         _levelCompleted = false;
         Bullets.Clear();
         Bonuses.Clear();
+
+        RaiseHudUpdate();
     }
 
     public virtual void OnExit()
@@ -67,13 +70,16 @@ public abstract class LevelScene : IScene
 
     public virtual void Update(float deltaTime, Dictionary<int, HashSet<PlayerAction>> inputs)
     {
-        if (_levelCompleted) return;
+        if (_levelCompleted)
+        {
+            RaiseHudUpdate();
+            return;
+        }
 
         _accumulator += deltaTime;
         while (_accumulator >= FixedDt)
         {
             float fixedDt = (float)FixedDt;
-
             foreach (var t in Tanks) t.Update(fixedDt);
             foreach (var b in Bullets) b.Update(fixedDt);
             foreach (var b in Bonuses) b.Update(fixedDt);
@@ -98,6 +104,13 @@ public abstract class LevelScene : IScene
 
             _accumulator -= FixedDt;
         }
+
+        _hudUpdateTimer += deltaTime;
+        if (_hudUpdateTimer >= HudUpdateInterval)
+        {
+            RaiseHudUpdate();
+            _hudUpdateTimer = 0f;
+        }
     }
 
     public virtual void CollectRenderables(List<IRenderable> renderables)
@@ -117,6 +130,8 @@ public abstract class LevelScene : IScene
             if (!tank.IsDestroyed)
             {
                 _collisionSystem.ApplyBonus(tank, type);
+
+                RaiseHudUpdate();
             }
         }
     }
@@ -126,9 +141,39 @@ public abstract class LevelScene : IScene
         _requestSceneChange?.Invoke(new MenuScene(_requestSceneChange));
     }
 
+    private void RaiseHudUpdate()
+    {
+        // string p1 = string.Empty;
+        // string p2 = string.Empty;
+
+        string p1, p2;
+
+        var t1 = Tanks[0];
+        var t2 = Tanks[1];
+
+        if (!t1.IsDestroyed)
+        {
+            p1 = $"P1:\nHP {t1.HP:F0}\nAMMO {t1.Stats.Ammo}\nFUEL {t1.Stats.Fuel:F0}";
+        }
+        else
+        {
+            p1 = "P1:\nDESTROYED";
+        }
+
+        if (!t2.IsDestroyed)
+        {
+            p2 = $"P2:\nHP {t2.HP:F0}\nAMMO {t2.Stats.Ammo}\nFUEL {t2.Stats.Fuel:F0}";
+        }
+        else
+        {
+            p2 = "P2:\nDESTROYED";
+        }
+
+        HudDataUpdated?.Invoke(this, (p1, p2));
+    }
+
 
     protected abstract void SetupLevel();
-
     protected virtual IScene? CreateNextLevel() => null;
 
     protected static List<Wall> CreateOuterWalls(Background bg, float thickness = 20f, float outerExtent = 10000f)
@@ -138,27 +183,22 @@ public abstract class LevelScene : IScene
         var center = bg.Position;
         float t2 = thickness / 2f;
         float huge = outerExtent / 2f;
-
         walls.Add(new Wall(
             new Vector2(center.X, center.Y - half.Y - t2 - huge),
             new Vector2(half.X + thickness + huge, huge + t2)
         ));
-
         walls.Add(new Wall(
             new Vector2(center.X, center.Y + half.Y + t2 + huge),
             new Vector2(half.X + thickness + huge, huge + t2)
         ));
-
         walls.Add(new Wall(
             new Vector2(center.X - half.X - t2 - huge, center.Y),
             new Vector2(huge + t2, half.Y)
         ));
-
         walls.Add(new Wall(
             new Vector2(center.X + half.X + t2 + huge, center.Y),
             new Vector2(huge + t2, half.Y)
         ));
-
         return walls;
     }
 }

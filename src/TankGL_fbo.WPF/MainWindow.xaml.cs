@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -18,6 +18,8 @@ using TankGL_fbo.Core.Patterns.Decorators;
 using TankGL_fbo.Core.Scenes;
 using TankGL_fbo.Core.Systems;
 using TankGL_fbo.WPF.Systems;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using MessageBox = System.Windows.Forms.MessageBox;
 using Vector2 = TankGL_fbo.Core.Contracts.Vector2;
 
 namespace TankGL_fbo.WPF
@@ -28,16 +30,22 @@ namespace TankGL_fbo.WPF
         private AssetManager _assets = null!;
         private Shader _shader = null!;
         private GLControl _glControl = null!;
-        private bool _isInitialized = false;
         private OpenGlTextRenderer? _textRenderer;
 
-        private readonly Dictionary<int, HashSet<PlayerAction>> _activeInputs = new() { [0] = new(), [1] = new() };
-        private readonly Dictionary<Key, (int playerId, PlayerAction action)> _keyMap = new();
-        private readonly List<IRenderable> _renderQueue = new();
-
+        private bool _isInitialized;
         private Matrix4 _projection;
         private readonly Stopwatch _stopwatch = new();
         private readonly DispatcherTimer _timer = new();
+        private readonly List<IRenderable> _renderQueue = new();
+
+        private readonly Dictionary<int, HashSet<PlayerAction>> _activeInputs = new() { [0] = new(), [1] = new() };
+        private readonly Dictionary<Key, (int playerId, PlayerAction action)> _keyMap = new();
+
+        private string _hudPlayer1Stats = string.Empty;
+        private string _hudPlayer2Stats = string.Empty;
+        private string[] _menuItems = Array.Empty<string>();
+        private int _menuSelectedIndex;
+        private bool _isMenuActive;
 
         public MainWindow()
         {
@@ -45,27 +53,15 @@ namespace TankGL_fbo.WPF
             SetupInputMap();
         }
 
-        private void SetupInputMap()
+        private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            _keyMap[Key.W] = (0, PlayerAction.MoveUp);
-            _keyMap[Key.S] = (0, PlayerAction.MoveDown);
-            _keyMap[Key.A] = (0, PlayerAction.RotateLeft);
-            _keyMap[Key.D] = (0, PlayerAction.RotateRight);
-            _keyMap[Key.Space] = (0, PlayerAction.Fire);
-            _keyMap[Key.LeftCtrl] = (0, PlayerAction.Fire);
-
-            _keyMap[Key.Up] = (1, PlayerAction.MoveUp);
-            _keyMap[Key.Down] = (1, PlayerAction.MoveDown);
-            _keyMap[Key.Left] = (1, PlayerAction.RotateLeft);
-            _keyMap[Key.Right] = (1, PlayerAction.RotateRight);
-            _keyMap[Key.RightShift] = (1, PlayerAction.Fire);
-            _keyMap[Key.RightCtrl] = (1, PlayerAction.Fire);
-
-            _keyMap[Key.E] = (0, PlayerAction.Confirm);
+            InitializeOpenGL();
+            InitializeGameSystems();
+            SubscribeToEvents();
+            StartGameLoop();
         }
 
-        [Obsolete]
-        private void Window_Loaded(object sender, RoutedEventArgs e)
+        private void InitializeOpenGL()
         {
             var settings = new GLControlSettings
             {
@@ -73,27 +69,17 @@ namespace TankGL_fbo.WPF
                 API = ContextAPI.OpenGL,
                 APIVersion = new Version(3, 3)
             };
-
             _glControl = new GLControl(settings);
             _glControl.Load += GlControl_Load;
             _glControl.Paint += GlControl_Paint;
             _glControl.Resize += GlControl_Resize;
             _glControl.Dock = System.Windows.Forms.DockStyle.Fill;
             Host.Child = _glControl;
-
-            _stopwatch.Start();
-            _timer.Interval = TimeSpan.FromMilliseconds(16);
-            _timer.Tick += GameTimer_Tick;
-            _timer.Start();
         }
 
-        private void GlControl_Load(object? sender, EventArgs e)
+        private void InitializeGameSystems()
         {
-            if (_glControl == null) return;
-            _glControl.MakeCurrent();
-
             ConfigManager.Load();
-
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
             _assets = new AssetManager(assetsPath);
 
@@ -109,84 +95,119 @@ namespace TankGL_fbo.WPF
 
                 _sceneManager = new SceneManager();
 
-                Action<IScene> changeScene = scene => _sceneManager.ChangeScene(scene);
-                _sceneManager.ChangeScene(new MenuScene(changeScene));
+                var initialScene = new MenuScene(_sceneManager.RequestSceneChange);
+                _sceneManager.ChangeScene(initialScene);
 
                 _isInitialized = true;
                 GlControl_Resize(_glControl, EventArgs.Empty);
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"Ошибка инициализации OpenGL: {ex.Message}");
+                MessageBox.Show($"Ошибка инициализации OpenGL: {ex.Message}");
                 _isInitialized = false;
             }
+        }
+
+        private void StartGameLoop()
+        {
+            _stopwatch.Start();
+            _timer.Interval = TimeSpan.FromMilliseconds(16);
+            _timer.Tick += GameTimer_Tick;
+            _timer.Start();
+        }
+
+        private void SubscribeToEvents()
+        {
+            _sceneManager.SceneChanged += OnSceneChanged;
+            _sceneManager.SceneChangeRequested += OnSceneChangeRequested;
+            SubscribeToCurrentSceneEvents();
+        }
+
+        private void SubscribeToCurrentSceneEvents()
+        {
+            if (_sceneManager.CurrentScene is LevelScene level)
+            {
+                level.HudDataUpdated += OnHudDataUpdated;
+            }
+            else if (_sceneManager.CurrentScene is MenuSceneBase menu)
+            {
+                menu.MenuStateChanged += OnMenuStateChanged;
+            }
+        }
+
+        private void UnsubscribeFromEvents()
+        {
+            if (_sceneManager != null)
+            {
+                _sceneManager.SceneChanged -= OnSceneChanged;
+                _sceneManager.SceneChangeRequested -= OnSceneChangeRequested;
+            }
+            UnsubscribeFromCurrentSceneEvents();
+        }
+
+        private void UnsubscribeFromCurrentSceneEvents()
+        {
+            if (_sceneManager?.CurrentScene is LevelScene level)
+            {
+                level.HudDataUpdated -= OnHudDataUpdated;
+            }
+            else if (_sceneManager?.CurrentScene is MenuSceneBase menu)
+            {
+                menu.MenuStateChanged -= OnMenuStateChanged;
+            }
+        }
+
+        private void OnSceneChanged(object? sender, IScene newScene)
+        {
+            UnsubscribeFromCurrentSceneEvents();
+            SubscribeToCurrentSceneEvents();
+
+            if (newScene is LevelScene)
+            {
+                _isMenuActive = false;
+            }
+            else if (newScene is MenuSceneBase menuScene)
+            {
+                _isMenuActive = true;
+                menuScene.RequestMenuStateUpdate();
+            }
+            else
+            {
+                _isMenuActive = false;
+            }
+
+            foreach (var set in _activeInputs.Values) set.Clear();
+        }
+
+        private void OnSceneChangeRequested(object? sender, IScene requestedScene)
+        {
+            _sceneManager.ChangeScene(requestedScene, 0.3f);
+        }
+
+        private void OnHudDataUpdated(object? sender, (string p1Stats, string p2Stats) hudData)
+        {
+            _hudPlayer1Stats = hudData.p1Stats;
+            _hudPlayer2Stats = hudData.p2Stats;
+        }
+
+        private void OnMenuStateChanged(object? sender, (string[] items, int selectedIndex) menuState)
+        {
+            _menuItems = menuState.items;
+            _menuSelectedIndex = menuState.selectedIndex;
         }
 
         private void GameTimer_Tick(object? sender, EventArgs e)
         {
             if (!_isInitialized) return;
+
             float dt = (float)_stopwatch.Elapsed.TotalSeconds;
             _stopwatch.Restart();
+
             _sceneManager.Update(Math.Min(dt, 0.1f), _activeInputs);
             _glControl.Invalidate();
         }
 
-        private void UpdateHud()
-        {
-            if (_sceneManager.CurrentScene is LevelScene levelScene &&
-                levelScene.PublicTanks.Count >= 2 &&
-                _textRenderer != null)
-            {
-                var tank1 = levelScene.PublicTanks[0];
-                var tank2 = levelScene.PublicTanks[1];
-
-                static string GetBonusInfo(TankGL_fbo.Core.Entities.Tank tank)
-                {
-                    if (tank.Stats is TankGL_fbo.Core.Patterns.Decorators.StatDecorator dec && !dec.IsExpired)
-                    {
-                        string typeName = dec.GetType().Name.Replace("Decorator", "");
-                        return $"Bonus: {typeName} ({dec.DurationLeft:F1}s)";
-                    }
-                    return "Bonus: None";
-                }
-
-                string statsPl1 = $"P1 HP: {(int)Math.Max(0, tank1.HP)}\n" +
-                                  $"Ammo: {tank1.Stats.Ammo}\n" +
-                                  $"Fuel: {(int)tank1.Stats.Fuel}\n" +
-                                  $"Spd: {(int)tank1.Stats.Speed}\n" +
-                                  $"Arm: {(int)tank1.Stats.Armor}\n" +
-                                  $"Dmg: {(int)tank1.Stats.Damage}\n" +
-                                  $"{GetBonusInfo(tank1)}";
-
-                string statsPl2 = $"P2 HP: {(int)Math.Max(0, tank2.HP)}\n" +
-                                  $"Ammo: {tank2.Stats.Ammo}\n" +
-                                  $"Fuel: {(int)tank2.Stats.Fuel}\n" +
-                                  $"Spd: {(int)tank2.Stats.Speed}\n" +
-                                  $"Arm: {(int)tank2.Stats.Armor}\n" +
-                                  $"Dmg: {(int)tank2.Stats.Damage}\n" +
-                                  $"{GetBonusInfo(tank2)}";
-
-                _textRenderer.DrawText(statsPl1, 50, Host.Child.Height / 4, 16, Host.Child.Width, Host.Child.Height);
-                _textRenderer.DrawText(statsPl2, 50, Host.Child.Height / 2, 16, Host.Child.Width, Host.Child.Height);
-            }
-
-            if (_sceneManager.CurrentScene is MenuSceneBase menuScene && _textRenderer != null)
-            {
-                var (items, selected) = menuScene.GetMenuState();
-                float y = 200;
-                for (int i = 0; i < items.Length; i++)
-                {
-                    string text = i == selected ? $"> {items[i]} <" : items[i];
-                    _textRenderer.DrawText(text, 550, y + i * 40, 24, Host.Child.Width, Host.Child.Height);
-                }
-                _textRenderer.DrawText("input:\nTANK_1 WASD SPACE LCTRL\nTANK_2 ARROWS RSHIFT RCTRL\nMENU WASD E", 50, 50, 16, Host.Child.Width, Host.Child.Height);
-            }
-
-            // if (_sceneManager.CurrentScene is InfoScene && _textRenderer != null)
-            // {
-            //     _textRenderer.DrawText("Press FIRE to return", 50, 50, 16, Host.Child.Width, Host.Child.Height);
-            // }
-        }
+        private void GlControl_Load(object? sender, EventArgs e) { }
 
         private void GlControl_Resize(object? sender, EventArgs e)
         {
@@ -197,14 +218,25 @@ namespace TankGL_fbo.WPF
             _projection = Matrix4.CreateOrthographic(_glControl.ClientSize.Width, _glControl.ClientSize.Height, -1, 1);
         }
 
-        [Obsolete]
-        private void GlControl_Paint(object? sender, PaintEventArgs e)
+        private void GlControl_Paint(object? sender, System.Windows.Forms.PaintEventArgs e)
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
 
             _glControl.MakeCurrent();
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
+            RenderScene();
+            RenderDebugBounds();
+
+            GL.UseProgram(0);
+
+            DrawHud();
+
+            _glControl.SwapBuffers();
+        }
+
+        private void RenderScene()
+        {
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
 
@@ -223,9 +255,9 @@ namespace TankGL_fbo.WPF
                 float renderHeight = entity.Bounds.HalfSize.Y * 2f;
 
                 OpenTK.Mathematics.Vector2 uvScale;
-                if (entity is TankGL_fbo.Core.Entities.Wall || (entity is TankGL_fbo.Core.Entities.Background bg && bg.Tile))
+                if (entity is Wall || (entity is Background bg && bg.Tile))
                 {
-                    float aspect = (float)tex.Width / (float)tex.Height;
+                    float aspect = (float)tex.Width / tex.Height;
                     uvScale = new OpenTK.Mathematics.Vector2(
                         renderWidth / TileSize,
                         renderHeight * aspect / TileSize
@@ -248,11 +280,16 @@ namespace TankGL_fbo.WPF
                 _assets.Quad.Bind();
                 _assets.Quad.Draw();
             }
+        }
+
+        private void RenderDebugBounds()
+        {
+            if (!ConfigManager.Config.ShowColliderBounds) return;
 
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
             GL.BindTexture(TextureTarget.Texture2D, 0);
 
-            foreach (var entity in renderList)
+            foreach (var entity in _renderQueue)
             {
                 var boxWidth = entity.Bounds.HalfSize.X * 2;
                 var boxHeight = entity.Bounds.HalfSize.Y * 2;
@@ -265,29 +302,67 @@ namespace TankGL_fbo.WPF
             }
 
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
-            GL.UseProgram(0);
-
-            UpdateHud();
-            _glControl.SwapBuffers();
         }
 
-        private void Window_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        private void DrawHud()
         {
-            if (e.Key == Key.F12)
-            {
-                Action<IScene> changeScene = scene => _sceneManager.ChangeScene(scene);
-                _sceneManager.ChangeScene(new MenuScene(changeScene));
-                return;
-            }
+            if (_textRenderer == null) return;
 
-            if (e.Key == Key.F1)
-            {
-                Action<IScene> changeScene = scene => _sceneManager.ChangeScene(scene);
+            int width = Host.Child.Width;
+            int height = Host.Child.Height;
 
-                // _sceneManager.ChangeScene(new InfoScene(changeScene, "info.png", new Vector2(400, 300)));
-                _sceneManager.ChangeScene(new InfoScene(changeScene));
-                return;
+            if (!_isMenuActive)
+            {
+                if (!string.IsNullOrEmpty(_hudPlayer1Stats))
+                {
+                    _textRenderer.DrawText(_hudPlayer1Stats, 50, height / 4, 16, width, height);
+                }
+                if (!string.IsNullOrEmpty(_hudPlayer2Stats))
+                {
+                    _textRenderer.DrawText(_hudPlayer2Stats, 50, height / 2, 16, width, height);
+                }
+
+                if (ConfigManager.Config.ShowColliderBounds)
+                {
+                    _textRenderer.DrawText("[DEBUG: COLLIDERS ON]", width - 250, 20, 14, width, height);
+                }
             }
+            else
+            {
+                float y = 200;
+                for (int i = 0; i < _menuItems.Length; i++)
+                {
+                    string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
+                    _textRenderer.DrawText(text, 550, y + i * 40, 24, width, height);
+                }
+
+                string controls = "input:\nTANK_1 - WASD SPACE LCTRL\nTANK_2 - ARROWS RSHIFT RCTRL\nMENU - WASD E";
+                _textRenderer.DrawText(controls, 50, 50, 16, width, height);
+            }
+        }
+
+        private void SetupInputMap()
+        {
+            _keyMap[Key.W] = (0, PlayerAction.MoveUp);
+            _keyMap[Key.S] = (0, PlayerAction.MoveDown);
+            _keyMap[Key.A] = (0, PlayerAction.RotateLeft);
+            _keyMap[Key.D] = (0, PlayerAction.RotateRight);
+            _keyMap[Key.Space] = (0, PlayerAction.Fire);
+            _keyMap[Key.LeftCtrl] = (0, PlayerAction.Fire);
+
+            _keyMap[Key.Up] = (1, PlayerAction.MoveUp);
+            _keyMap[Key.Down] = (1, PlayerAction.MoveDown);
+            _keyMap[Key.Left] = (1, PlayerAction.RotateLeft);
+            _keyMap[Key.Right] = (1, PlayerAction.RotateRight);
+            _keyMap[Key.RightShift] = (1, PlayerAction.Fire);
+            _keyMap[Key.RightCtrl] = (1, PlayerAction.Fire);
+
+            _keyMap[Key.E] = (0, PlayerAction.Confirm);
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            HandleGlobalShortcuts(e);
 
             if (_keyMap.TryGetValue(e.Key, out var map))
             {
@@ -295,12 +370,36 @@ namespace TankGL_fbo.WPF
                 return;
             }
 
-            // if (e.Key == Key.Escape && _sceneManager.CurrentScene is LevelScene levelScene)
-            // {
-            //     levelScene.RequestReturnToMenu();
-            //     return;
-            // }
+            HandleDebugBonuses(e);
+        }
 
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (_keyMap.TryGetValue(e.Key, out var map))
+            {
+                _activeInputs[map.playerId].Remove(map.action);
+            }
+        }
+
+        private void HandleGlobalShortcuts(KeyEventArgs e)
+        {
+            if (e.Key == Key.F12)
+            {
+                _sceneManager.ChangeScene(new MenuScene(_sceneManager.RequestSceneChange));
+                e.Handled = true;
+                return;
+            }
+
+            if (e.Key == Key.F1)
+            {
+                _sceneManager.ChangeScene(new InfoScene(_sceneManager.RequestSceneChange));
+                e.Handled = true;
+                return;
+            }
+        }
+
+        private void HandleDebugBonuses(KeyEventArgs e)
+        {
             if (_sceneManager.CurrentScene is LevelScene gameLevel)
             {
                 BonusType? bonus = e.Key switch
@@ -321,12 +420,15 @@ namespace TankGL_fbo.WPF
             }
         }
 
-        private void Window_KeyUp(object sender, System.Windows.Input.KeyEventArgs e)
+        protected override void OnClosed(EventArgs e)
         {
-            if (_keyMap.TryGetValue(e.Key, out var map))
-            {
-                _activeInputs[map.playerId].Remove(map.action);
-            }
+            UnsubscribeFromEvents();
+            _timer.Stop();
+            _timer.Tick -= GameTimer_Tick;
+            _assets?.Dispose();
+            _shader?.Dispose();
+            _textRenderer?.Dispose();
+            base.OnClosed(e);
         }
     }
 }

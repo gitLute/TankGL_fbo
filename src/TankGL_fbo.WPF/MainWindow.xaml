@@ -4,6 +4,7 @@
         xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
         Title="TankGL_fbo" Height="720" Width="1280"
         WindowStartupLocation="CenterScreen"
+        ResizeMode="CanMinimize"
         Loaded="Window_Loaded" KeyDown="Window_KeyDown" KeyUp="Window_KeyUp">
     
     <Grid>

@@ -30,31 +30,50 @@ public sealed class OptionsScene : MenuSceneBase
 
     protected override string[] GetMenuItems()
     {
-        _menuItems[0] = $"Debug Mode: {(ConfigManager.Config.DebugMode ? "ON" : "OFF")}";
-        _menuItems[1] = $"";
-        _menuItems[2] = $"";
-        _menuItems[3] = "Reset to Default";
-        _menuItems[4] = "Back";
+        // _menuItems[0] = $"Debug Mode: {(ConfigManager.Config.DebugMode ? "ON" : "OFF")}";
+        // _menuItems[1] = $"Collider Borders: {(ConfigManager.Config.ShowColliderBounds ? "ON" : "OFF")}";
+        // _menuItems[2] = $"";
+        // _menuItems[3] = "Reset to Default";
+        // _menuItems[4] = "Back";
+        _menuItems[0] = $"Collider Borders: {(ConfigManager.Config.ShowColliderBounds ? "ON" : "OFF")}";
+        _menuItems[1] = "Reset to Default";
+        _menuItems[2] = "Back";
         return _menuItems;
     }
 
     protected override void OnItemSelected(int index)
     {
+        // switch (index)
+        // {
+        //     case 0:
+        //         ConfigManager.Config.DebugMode = !ConfigManager.Config.DebugMode;
+        //         _unsavedChanges = true;
+        //         break;
+        //     case 1:
+        //         ConfigManager.Config.ShowColliderBounds = !ConfigManager.Config.ShowColliderBounds;
+        //         _unsavedChanges = true;
+        //         break;
+        //     case 2:
+        //         break;
+        //     case 3:
+        //         ConfigManager.Config = new GameConfig();
+        //         _unsavedChanges = true;
+        //         break;
+        //     case 4:
+        //         RequestSceneChange?.Invoke(new MenuScene(RequestSceneChange));
+        //         break;
+        // }
         switch (index)
         {
             case 0:
-                ConfigManager.Config.DebugMode = !ConfigManager.Config.DebugMode;
+                ConfigManager.Config.ShowColliderBounds = !ConfigManager.Config.ShowColliderBounds;
                 _unsavedChanges = true;
                 break;
             case 1:
-                break;
-            case 2:
-                break;
-            case 3:
                 ConfigManager.Config = new GameConfig();
                 _unsavedChanges = true;
                 break;
-            case 4:
+            case 2:
                 RequestSceneChange?.Invoke(new MenuScene(RequestSceneChange));
                 break;
         }

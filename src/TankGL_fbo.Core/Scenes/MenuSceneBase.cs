@@ -9,11 +9,36 @@ namespace TankGL_fbo.Core.Scenes;
 public abstract class MenuSceneBase : IScene
 {
     protected readonly Action<IScene>? RequestSceneChange;
-    protected int SelectedIndex { get; set; }
+
+    private int _selectedIndex;
+    protected int SelectedIndex
+    {
+        get => _selectedIndex;
+        set
+        {
+            if (_selectedIndex != value)
+            {
+                _selectedIndex = value;
+                RaiseMenuStateChanged();
+            }
+        }
+    }
+
     protected float InputCooldown { get; set; }
     protected const float CooldownTime = 0.2f;
-
     private readonly List<Background> _backgrounds = [];
+
+    public event EventHandler<(string[] items, int selectedIndex)>? MenuStateChanged;
+
+    public void RequestMenuStateUpdate()
+    {
+        RaiseMenuStateChanged();
+    }
+
+    protected void RaiseMenuStateChanged()
+    {
+        MenuStateChanged?.Invoke(this, GetMenuState());
+    }
 
     protected MenuSceneBase(Action<IScene>? requestSceneChange = null)
     {
@@ -21,7 +46,6 @@ public abstract class MenuSceneBase : IScene
     }
 
     protected abstract string[] GetMenuItems();
-
     protected abstract void OnItemSelected(int index);
 
     protected virtual Background CreateBackground() => new Background(new Vector2(0, 0), new Vector2(640, 360), "tile.png");
@@ -52,13 +76,11 @@ public abstract class MenuSceneBase : IScene
                 SelectedIndex = (SelectedIndex - 1 + items.Length) % items.Length;
                 InputCooldown = CooldownTime;
             }
-
             if (actions.Contains(PlayerAction.MoveDown) && InputCooldown <= 0)
             {
                 SelectedIndex = (SelectedIndex + 1) % items.Length;
                 InputCooldown = CooldownTime;
             }
-
             if (actions.Contains(PlayerAction.Confirm) && InputCooldown <= 0)
             {
                 OnItemSelected(SelectedIndex);
