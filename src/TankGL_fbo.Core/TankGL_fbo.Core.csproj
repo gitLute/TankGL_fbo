@@ -6,4 +6,42 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <Target Name="GenerateGitInfo" BeforeTargets="BeforeBuild">
+    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true"
+      StandardOutputImportance="low" IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitCommitHash" />
+    </Exec>
+    <Exec Command="git rev-parse --abbrev-ref HEAD" ConsoleToMSBuild="true"
+      IgnoreExitCode="true">
+      <Output TaskParameter="ConsoleOutput" PropertyName="GitBranchName" />
+    </Exec>
+
+    <PropertyGroup>
+      <GitBranchName>$(GitBranchName.Trim())</GitBranchName>
+      <GitCommitHash>$(GitCommitHash.Trim())</GitCommitHash>
+      <BuildDate>$([System.DateTime]::UtcNow.ToString("yyyy-MM-dd HH:mm:ss 'UTC'"))</BuildDate>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <GitInfoLine Include="namespace TankGL_fbo.Core" />
+      <GitInfoLine Include="{" />
+      <GitInfoLine Include="    public static class GitBuildInfo" />
+      <GitInfoLine Include="    {" />
+      <GitInfoLine Include="        public const string BuildDate = &quot;$(BuildDate)&quot;%3B" />
+      <GitInfoLine Include="        public const string Branch = &quot;$(GitBranchName)&quot;%3B" />
+      <GitInfoLine Include="        public const string Commit = &quot;$(GitCommitHash)&quot;%3B" />
+      <GitInfoLine Include="    }" />
+      <GitInfoLine Include="}" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+      File="$(IntermediateOutputPath)GitInfo.g.cs"
+      Lines="@(GitInfoLine)"
+      Overwrite="true" />
+
+    <ItemGroup>
+      <Compile Include="$(IntermediateOutputPath)GitInfo.g.cs" />
+    </ItemGroup>
+  </Target>
+
 </Project>

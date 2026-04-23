@@ -336,13 +336,18 @@ namespace TankGL_fbo.WPF
                     _textRenderer.DrawText(text, 550, y + i * 40, 24, width, height);
                 }
 
-                string controls = "input:\nTANK_1 - WASD SPACE LCTRL\nTANK_2 - ARROWS RSHIFT RCTRL\nMENU - WASD E";
+                string controls = "Input:\nTANK_1 - WASD SPACE LCTRL\nTANK_2 - ARROWS RSHIFT RCTRL\nMENU - WASD E";
                 _textRenderer.DrawText(controls, 50, 50, 16, width, height);
+
+                string buildInfo = $"Build: {TankGL_fbo.Core.GitBuildInfo.BuildDate}\nGit: {TankGL_fbo.Core.GitBuildInfo.Branch}@{TankGL_fbo.Core.GitBuildInfo.Commit}";
+                _textRenderer.DrawText(buildInfo, 50, height - 80, 16, width, height);
             }
         }
 
         private void SetupInputMap()
         {
+            _keyMap[Key.E] = (0, PlayerAction.Confirm);
+            
             _keyMap[Key.W] = (0, PlayerAction.MoveUp);
             _keyMap[Key.S] = (0, PlayerAction.MoveDown);
             _keyMap[Key.A] = (0, PlayerAction.RotateLeft);
@@ -356,8 +361,6 @@ namespace TankGL_fbo.WPF
             _keyMap[Key.Right] = (1, PlayerAction.RotateRight);
             _keyMap[Key.RightShift] = (1, PlayerAction.Fire);
             _keyMap[Key.RightCtrl] = (1, PlayerAction.Fire);
-
-            _keyMap[Key.E] = (0, PlayerAction.Confirm);
         }
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
