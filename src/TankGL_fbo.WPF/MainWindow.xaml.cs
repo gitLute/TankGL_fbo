@@ -239,7 +239,7 @@ namespace TankGL_fbo.WPF
         {
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-            
+
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
 
@@ -350,7 +350,7 @@ namespace TankGL_fbo.WPF
         private void SetupInputMap()
         {
             _keyMap[Key.E] = (0, PlayerAction.Confirm);
-            
+
             _keyMap[Key.W] = (0, PlayerAction.MoveUp);
             _keyMap[Key.S] = (0, PlayerAction.MoveDown);
             _keyMap[Key.A] = (0, PlayerAction.RotateLeft);
@@ -366,24 +366,24 @@ namespace TankGL_fbo.WPF
             _keyMap[Key.RightCtrl] = (1, PlayerAction.Fire);
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
+        private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             HandleGlobalShortcuts(e);
-
             if (_keyMap.TryGetValue(e.Key, out var map))
             {
                 _activeInputs[map.playerId].Add(map.action);
+                e.Handled = true;
                 return;
             }
-
             HandleDebugBonuses(e);
         }
 
-        private void Window_KeyUp(object sender, KeyEventArgs e)
+        private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
         {
             if (_keyMap.TryGetValue(e.Key, out var map))
             {
                 _activeInputs[map.playerId].Remove(map.action);
+                e.Handled = true;
             }
         }
 
