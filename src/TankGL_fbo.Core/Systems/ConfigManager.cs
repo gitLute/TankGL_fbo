@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Text.Json;
 using TankGL_fbo.Core.Contracts;
@@ -15,6 +16,8 @@ public static class ConfigManager
 
     public static GameConfig Config { get; internal set; } = new();
 
+    public static event Action? ConfigSaved;
+
     public static void Load()
     {
         try
@@ -26,7 +29,7 @@ public static class ConfigManager
             }
             else
             {
-                Save(); 
+                Save();
             }
         }
         catch
@@ -42,10 +45,8 @@ public static class ConfigManager
         {
             string json = JsonSerializer.Serialize(Config, _jsonOptions);
             File.WriteAllText(ConfigPath, json);
+            ConfigSaved?.Invoke();
         }
-        catch
-        {
-            
-        }
+        catch { }
     }
 }

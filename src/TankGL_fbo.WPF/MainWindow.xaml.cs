@@ -44,8 +44,9 @@ namespace TankGL_fbo.WPF
         private int _menuSelectedIndex;
         private bool _isMenuActive;
 
-        private const float VirtualWidth = 1280f;
-        private const float VirtualHeight = 720f;
+        private float VirtualWidth => ConfigManager.Config.ResolutionWidth;
+        private float VirtualHeight => ConfigManager.Config.ResolutionHeight;
+
         private int _vpX, _vpY, _vpW, _vpH;
 
         public MainWindow()
@@ -95,6 +96,9 @@ namespace TankGL_fbo.WPF
                 var initialScene = new MenuScene(_sceneManager.RequestSceneChange);
                 _sceneManager.ChangeScene(initialScene);
                 _isInitialized = true;
+
+                ConfigManager.ConfigSaved += OnConfigSaved;
+
                 GlControl_Resize(_glControl, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -102,6 +106,12 @@ namespace TankGL_fbo.WPF
                 MessageBox.Show($"Ошибка инициализации OpenGL: {ex.Message}");
                 _isInitialized = false;
             }
+        }
+
+        private void OnConfigSaved()
+        {
+            if (!_isInitialized) return;
+            Dispatcher.Invoke(() => GlControl_Resize(_glControl, EventArgs.Empty));
         }
 
         private void StartGameLoop()
@@ -219,7 +229,6 @@ namespace TankGL_fbo.WPF
             _vpH = (int)MathF.Round(VirtualHeight * scale);
 
             GL.Viewport(_vpX, _vpY, _vpW, _vpH);
-
             _projection = Matrix4.CreateOrthographic(VirtualWidth, VirtualHeight, -1, 1);
         }
 
@@ -231,7 +240,6 @@ namespace TankGL_fbo.WPF
             GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
             GL.ClearColor(0f, 0f, 0f, 1f);
             GL.Clear(ClearBufferMask.ColorBufferBit);
-
 
             GL.Viewport(_vpX, _vpY, _vpW, _vpH);
             GL.ClearColor(0.15f, 0.15f, 0.15f, 1.0f);
@@ -410,6 +418,7 @@ namespace TankGL_fbo.WPF
         protected override void OnClosed(EventArgs e)
         {
             UnsubscribeFromEvents();
+            ConfigManager.ConfigSaved -= OnConfigSaved;
             _timer.Stop();
             _timer.Tick -= GameTimer_Tick;
             _assets?.Dispose();
