@@ -4,10 +4,12 @@
     xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
     Title="TankGL_fbo" Height="720" Width="1280"
     WindowStartupLocation="CenterScreen"
-    ResizeMode="CanMinimize"
     Loaded="Window_Loaded"
     PreviewKeyDown="Window_PreviewKeyDown"
     PreviewKeyUp="Window_PreviewKeyUp">
+
+    <!-- При проблемах с вьюпорт -->
+    <!-- ResizeMode="CanMinimize" -->
 
     <Grid>
         <wfi:WindowsFormsHost x:Name="Host" />

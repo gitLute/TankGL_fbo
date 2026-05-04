@@ -31,21 +31,22 @@ namespace TankGL_fbo.WPF
         private Shader _shader = null!;
         private GLControl _glControl = null!;
         private OpenGlTextRenderer? _textRenderer;
-
         private bool _isInitialized;
         private Matrix4 _projection;
         private readonly Stopwatch _stopwatch = new();
         private readonly DispatcherTimer _timer = new();
         private readonly List<IRenderable> _renderQueue = new();
-
         private readonly Dictionary<int, HashSet<PlayerAction>> _activeInputs = new() { [0] = new(), [1] = new() };
         private readonly Dictionary<Key, (int playerId, PlayerAction action)> _keyMap = new();
-
         private string _hudPlayer1Stats = string.Empty;
         private string _hudPlayer2Stats = string.Empty;
         private string[] _menuItems = Array.Empty<string>();
         private int _menuSelectedIndex;
         private bool _isMenuActive;
+
+        private const float VirtualWidth = 1280f;
+        private const float VirtualHeight = 720f;
+        private int _vpX, _vpY, _vpW, _vpH;
 
         public MainWindow()
         {
@@ -82,22 +83,17 @@ namespace TankGL_fbo.WPF
             ConfigManager.Load();
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
             _assets = new AssetManager(assetsPath);
-
             try
             {
                 _assets.Init();
                 _shader = _assets.GetShader("default");
                 _textRenderer = new OpenGlTextRenderer();
-
                 GL.ClearColor(0.15f, 0.15f, 0.15f, 1.0f);
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
                 _sceneManager = new SceneManager();
-
                 var initialScene = new MenuScene(_sceneManager.RequestSceneChange);
                 _sceneManager.ChangeScene(initialScene);
-
                 _isInitialized = true;
                 GlControl_Resize(_glControl, EventArgs.Empty);
             }
@@ -161,7 +157,6 @@ namespace TankGL_fbo.WPF
         {
             UnsubscribeFromCurrentSceneEvents();
             SubscribeToCurrentSceneEvents();
-
             if (newScene is LevelScene)
             {
                 _isMenuActive = false;
@@ -175,7 +170,6 @@ namespace TankGL_fbo.WPF
             {
                 _isMenuActive = false;
             }
-
             foreach (var set in _activeInputs.Values) set.Clear();
         }
 
@@ -199,10 +193,8 @@ namespace TankGL_fbo.WPF
         private void GameTimer_Tick(object? sender, EventArgs e)
         {
             if (!_isInitialized) return;
-
             float dt = (float)_stopwatch.Elapsed.TotalSeconds;
             _stopwatch.Restart();
-
             _sceneManager.Update(Math.Min(dt, 0.1f), _activeInputs);
             _glControl.Invalidate();
         }
@@ -211,27 +203,44 @@ namespace TankGL_fbo.WPF
 
         private void GlControl_Resize(object? sender, EventArgs e)
         {
-            if (!_isInitialized || _glControl == null || _glControl.ClientSize.Width <= 0) return;
-
+            if (!_isInitialized || _glControl == null || _glControl.ClientSize.Width <= 0 || _glControl.ClientSize.Height <= 0) return;
             _glControl.MakeCurrent();
-            GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
-            _projection = Matrix4.CreateOrthographic(_glControl.ClientSize.Width, _glControl.ClientSize.Height, -1, 1);
+
+            int actualW = _glControl.ClientSize.Width;
+            int actualH = _glControl.ClientSize.Height;
+
+            var vp = new Viewport(VirtualWidth, VirtualHeight, actualW, actualH);
+            float scale = vp.ScaleFactor;
+            var offset = vp.Offset;
+
+            _vpX = (int)MathF.Round(offset.X);
+            _vpY = (int)MathF.Round(offset.Y);
+            _vpW = (int)MathF.Round(VirtualWidth * scale);
+            _vpH = (int)MathF.Round(VirtualHeight * scale);
+
+            GL.Viewport(_vpX, _vpY, _vpW, _vpH);
+
+            _projection = Matrix4.CreateOrthographic(VirtualWidth, VirtualHeight, -1, 1);
         }
 
         private void GlControl_Paint(object? sender, System.Windows.Forms.PaintEventArgs e)
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
-
             _glControl.MakeCurrent();
+
+            GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
+            GL.ClearColor(0f, 0f, 0f, 1f);
+            GL.Clear(ClearBufferMask.ColorBufferBit);
+
+
+            GL.Viewport(_vpX, _vpY, _vpW, _vpH);
+            GL.ClearColor(0.15f, 0.15f, 0.15f, 1.0f);
             GL.Clear(ClearBufferMask.ColorBufferBit);
 
             RenderScene();
             RenderDebugBounds();
-
             GL.UseProgram(0);
-
             DrawHud();
-
             _glControl.SwapBuffers();
         }
 
@@ -239,24 +248,18 @@ namespace TankGL_fbo.WPF
         {
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
             _shader.Use();
             _shader.SetMatrix4("uProjection", _projection);
-
             _renderQueue.Clear();
             _sceneManager.CollectRenderables(_renderQueue);
-
             var renderList = _renderQueue.OrderBy(x => x.ZIndex).ToList();
             const float TileSize = 50f;
-
             foreach (var entity in renderList)
             {
                 var tex = _assets.LoadTexture(entity.TexturePath);
                 if (tex == null) continue;
-
                 float renderWidth = entity.Bounds.HalfSize.X * 2f;
                 float renderHeight = entity.Bounds.HalfSize.Y * 2f;
-
                 OpenTK.Mathematics.Vector2 uvScale;
                 if (entity is Wall || (entity is Background bg && bg.Tile))
                 {
@@ -270,15 +273,11 @@ namespace TankGL_fbo.WPF
                 {
                     uvScale = new OpenTK.Mathematics.Vector2(1f, 1f);
                 }
-
                 _shader.SetVector2("uUvScale", uvScale);
-
                 var model = Matrix4.CreateScale(renderWidth, renderHeight, 1.0f) *
                             Matrix4.CreateRotationZ(entity.Rotation) *
                             Matrix4.CreateTranslation(entity.Position.X, entity.Position.Y, 0);
-
                 _shader.SetMatrix4("uModel", model);
-
                 tex.Use();
                 _assets.Quad.Bind();
                 _assets.Quad.Draw();
@@ -288,22 +287,17 @@ namespace TankGL_fbo.WPF
         private void RenderDebugBounds()
         {
             if (!ConfigManager.Config.ShowColliderBounds) return;
-
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Line);
             GL.BindTexture(TextureTarget.Texture2D, 0);
-
             foreach (var entity in _renderQueue)
             {
                 var boxWidth = entity.Bounds.HalfSize.X * 2;
                 var boxHeight = entity.Bounds.HalfSize.Y * 2;
-
                 var debugModel = Matrix4.CreateScale(boxWidth, boxHeight, 1.0f) *
                                  Matrix4.CreateTranslation(entity.Bounds.Center.X, entity.Bounds.Center.Y, 0);
-
                 _shader.SetMatrix4("uModel", debugModel);
                 _assets.Quad.Draw();
             }
-
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
 
@@ -311,24 +305,17 @@ namespace TankGL_fbo.WPF
         {
             if (_textRenderer == null) return;
 
-            int width = Host.Child.Width;
-            int height = Host.Child.Height;
+            int width = (int)VirtualWidth;
+            int height = (int)VirtualHeight;
 
             if (!_isMenuActive)
             {
                 if (!string.IsNullOrEmpty(_hudPlayer1Stats))
-                {
                     _textRenderer.DrawText(_hudPlayer1Stats, 50, height / 4, 16, width, height);
-                }
                 if (!string.IsNullOrEmpty(_hudPlayer2Stats))
-                {
                     _textRenderer.DrawText(_hudPlayer2Stats, 50, height / 2, 16, width, height);
-                }
-
                 if (ConfigManager.Config.ShowColliderBounds)
-                {
                     _textRenderer.DrawText("[DEBUG: COLLIDERS ON]", width - 250, 20, 14, width, height);
-                }
             }
             else
             {
@@ -338,10 +325,8 @@ namespace TankGL_fbo.WPF
                     string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
                     _textRenderer.DrawText(text, 550, y + i * 40, 24, width, height);
                 }
-
                 string controls = "Input:\nTANK_1 - WASD SPACE LCTRL\nTANK_2 - ARROWS RSHIFT RCTRL\nMENU - WASD E";
                 _textRenderer.DrawText(controls, 50, 50, 16, width, height);
-
                 string buildInfo = $"Build: {TankGL_fbo.Core.GitBuildInfo.BuildDate}\nGit: {TankGL_fbo.Core.GitBuildInfo.Branch}@{TankGL_fbo.Core.GitBuildInfo.Commit}";
                 _textRenderer.DrawText(buildInfo, 50, height - 80, 16, width, height);
             }
@@ -350,14 +335,12 @@ namespace TankGL_fbo.WPF
         private void SetupInputMap()
         {
             _keyMap[Key.E] = (0, PlayerAction.Confirm);
-
             _keyMap[Key.W] = (0, PlayerAction.MoveUp);
             _keyMap[Key.S] = (0, PlayerAction.MoveDown);
             _keyMap[Key.A] = (0, PlayerAction.RotateLeft);
             _keyMap[Key.D] = (0, PlayerAction.RotateRight);
             _keyMap[Key.Space] = (0, PlayerAction.Fire);
             _keyMap[Key.LeftCtrl] = (0, PlayerAction.Fire);
-
             _keyMap[Key.Up] = (1, PlayerAction.MoveUp);
             _keyMap[Key.Down] = (1, PlayerAction.MoveDown);
             _keyMap[Key.Left] = (1, PlayerAction.RotateLeft);
@@ -395,7 +378,6 @@ namespace TankGL_fbo.WPF
                 e.Handled = true;
                 return;
             }
-
             if (e.Key == Key.F1)
             {
                 _sceneManager.ChangeScene(new InfoScene(_sceneManager.RequestSceneChange));
@@ -417,7 +399,6 @@ namespace TankGL_fbo.WPF
                     Key.D5 or Key.NumPad5 => BonusType.FuelCan,
                     _ => null
                 };
-
                 if (bonus.HasValue)
                 {
                     int tankIndex = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) ? 1 : 0;
