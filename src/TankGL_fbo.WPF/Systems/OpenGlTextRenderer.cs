@@ -30,7 +30,8 @@ namespace TankGL_fbo.WPF.Systems
             {
                 using (var g = Graphics.FromImage(bitmap))
                 {
-                    g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                    //g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
+                    g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
                     g.Clear(Color.Transparent);
 
                     using (var font = new Font("Lucida console", 26, FontStyle.Regular))
@@ -61,14 +62,13 @@ namespace TankGL_fbo.WPF.Systems
             return id;
         }
 
-        public void DrawText(string text, float x, float y, float fontSize, int screenWidth, int screenHeight)
+        public void DrawText(string text, float x, float y, float fontSize, int screenWidth, int screenHeight, Color? textColor = null)
         {
             if (string.IsNullOrEmpty(text)) return;
 
             float startX = x;
             float currentX = x;
             float currentY = y;
-
             float lineHeight = fontSize * 1.1f;
             float charWidth = fontSize * 0.55f;
 
@@ -76,7 +76,6 @@ namespace TankGL_fbo.WPF.Systems
             GL.PushMatrix();
             GL.LoadIdentity();
             GL.Ortho(0, screenWidth, screenHeight, 0, -1, 1);
-
             GL.MatrixMode(MatrixMode.Modelview);
             GL.PushMatrix();
             GL.LoadIdentity();
@@ -85,10 +84,10 @@ namespace TankGL_fbo.WPF.Systems
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.BindTexture(TextureTarget.Texture2D, _textureId);
-            GL.Color4(Color.White);
+
+            GL.Color4(textColor ?? Color.White);
 
             GL.Begin(PrimitiveType.Quads);
-
             foreach (char c in text)
             {
                 if (c == '\n')
@@ -106,19 +105,15 @@ namespace TankGL_fbo.WPF.Systems
 
                 GL.TexCoord2(u, v);
                 GL.Vertex2(currentX, currentY);
-
                 GL.TexCoord2(u + _cellStep, v);
                 GL.Vertex2(currentX + fontSize, currentY);
-
                 GL.TexCoord2(u + _cellStep, v + _cellStep);
                 GL.Vertex2(currentX + fontSize, currentY + fontSize);
-
                 GL.TexCoord2(u, v + _cellStep);
                 GL.Vertex2(currentX, currentY + fontSize);
 
                 currentX += charWidth;
             }
-
             GL.End();
 
             GL.Disable(EnableCap.Blend);

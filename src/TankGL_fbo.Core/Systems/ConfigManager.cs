@@ -17,6 +17,9 @@ public static class ConfigManager
     public static GameConfig Config { get; internal set; } = new();
 
     public static event Action? ConfigSaved;
+    public static event Action<int>? MenuFontSizeChanged;
+
+    public static void NotifyMenuFontSizeChanged(int newSize) => MenuFontSizeChanged?.Invoke(newSize);
 
     public static void Load()
     {

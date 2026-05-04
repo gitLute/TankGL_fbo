@@ -42,12 +42,14 @@ namespace TankGL_fbo.WPF
         private string _hudPlayer2Stats = string.Empty;
         private string[] _menuItems = Array.Empty<string>();
         private int _menuSelectedIndex;
-        private bool _isMenuActive;
-
+        private enum SceneState { Menu, Info, Level, Options, Other }
+        private SceneState _currentSceneState = SceneState.Other;
         private float VirtualWidth => ConfigManager.Config.ResolutionWidth;
         private float VirtualHeight => ConfigManager.Config.ResolutionHeight;
-
         private int _vpX, _vpY, _vpW, _vpH;
+
+        private int _cachedMenuFontSize = 24;
+        private int _cachedStatsFontSize = 16;
 
         public MainWindow()
         {
@@ -82,6 +84,11 @@ namespace TankGL_fbo.WPF
         private void InitializeGameSystems()
         {
             ConfigManager.Load();
+
+            _cachedMenuFontSize = ConfigManager.Config.MenuFontSize;
+            _cachedStatsFontSize = _cachedMenuFontSize * 2 / 3;
+            ConfigManager.MenuFontSizeChanged += OnMenuFontSizeChanged;
+
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
             _assets = new AssetManager(assetsPath);
             try
@@ -96,9 +103,7 @@ namespace TankGL_fbo.WPF
                 var initialScene = new MenuScene(_sceneManager.RequestSceneChange);
                 _sceneManager.ChangeScene(initialScene);
                 _isInitialized = true;
-
                 ConfigManager.ConfigSaved += OnConfigSaved;
-
                 GlControl_Resize(_glControl, EventArgs.Empty);
             }
             catch (Exception ex)
@@ -106,6 +111,12 @@ namespace TankGL_fbo.WPF
                 MessageBox.Show($"Ошибка инициализации OpenGL: {ex.Message}");
                 _isInitialized = false;
             }
+        }
+
+        private void OnMenuFontSizeChanged(int newSize)
+        {
+            _cachedMenuFontSize = newSize;
+            _cachedStatsFontSize = newSize * 2 / 3;
         }
 
         private void OnConfigSaved()
@@ -167,18 +178,17 @@ namespace TankGL_fbo.WPF
         {
             UnsubscribeFromCurrentSceneEvents();
             SubscribeToCurrentSceneEvents();
-            if (newScene is LevelScene)
+            _currentSceneState = newScene switch
             {
-                _isMenuActive = false;
-            }
-            else if (newScene is MenuSceneBase menuScene)
+                MenuScene => SceneState.Menu,
+                InfoScene => SceneState.Info,
+                LevelScene => SceneState.Level,
+                OptionsScene => SceneState.Options,
+                _ => SceneState.Other
+            };
+            if (newScene is MenuSceneBase menuScene)
             {
-                _isMenuActive = true;
                 menuScene.RequestMenuStateUpdate();
-            }
-            else
-            {
-                _isMenuActive = false;
             }
             foreach (var set in _activeInputs.Values) set.Clear();
         }
@@ -215,19 +225,15 @@ namespace TankGL_fbo.WPF
         {
             if (!_isInitialized || _glControl == null || _glControl.ClientSize.Width <= 0 || _glControl.ClientSize.Height <= 0) return;
             _glControl.MakeCurrent();
-
             int actualW = _glControl.ClientSize.Width;
             int actualH = _glControl.ClientSize.Height;
-
             var vp = new Viewport(VirtualWidth, VirtualHeight, actualW, actualH);
             float scale = vp.ScaleFactor;
             var offset = vp.Offset;
-
             _vpX = (int)MathF.Round(offset.X);
             _vpY = (int)MathF.Round(offset.Y);
             _vpW = (int)MathF.Round(VirtualWidth * scale);
             _vpH = (int)MathF.Round(VirtualHeight * scale);
-
             GL.Viewport(_vpX, _vpY, _vpW, _vpH);
             _projection = Matrix4.CreateOrthographic(VirtualWidth, VirtualHeight, -1, 1);
         }
@@ -236,15 +242,12 @@ namespace TankGL_fbo.WPF
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
             _glControl.MakeCurrent();
-
             GL.Viewport(0, 0, _glControl.ClientSize.Width, _glControl.ClientSize.Height);
             GL.ClearColor(0f, 0f, 0f, 1f);
             GL.Clear(ClearBufferMask.ColorBufferBit);
-
             GL.Viewport(_vpX, _vpY, _vpW, _vpH);
             GL.ClearColor(0.15f, 0.15f, 0.15f, 1.0f);
             GL.Clear(ClearBufferMask.ColorBufferBit);
-
             RenderScene();
             RenderDebugBounds();
             GL.UseProgram(0);
@@ -312,31 +315,53 @@ namespace TankGL_fbo.WPF
         private void DrawHud()
         {
             if (_textRenderer == null) return;
-
             int width = (int)VirtualWidth;
             int height = (int)VirtualHeight;
 
-            if (!_isMenuActive)
+            int menuFontSize = _cachedMenuFontSize;
+            int statsFontSize = _cachedStatsFontSize;
+
+            float menuFontProcentage = menuFontSize / height;
+            float statFontProcentage = statsFontSize / height;
+            float menuX = (int)(width / (10 + menuFontProcentage));
+            float menuY = (int)(height / 3);
+            float statsX_PL1 = (int)(width / (15 + statFontProcentage));
+            float statsX_PL2 = (int)(width * 13 / (15 + statFontProcentage));
+            float statsY = (int)(height / 15);
+            float statsCenterX = (int)(width / (2 + statFontProcentage));
+            float buildX = (int)(width / (10 + statFontProcentage));
+            float buildY = (int)(height / 10);
+
+            switch (_currentSceneState)
             {
-                if (!string.IsNullOrEmpty(_hudPlayer1Stats))
-                    _textRenderer.DrawText(_hudPlayer1Stats, 50, height / 4, 16, width, height);
-                if (!string.IsNullOrEmpty(_hudPlayer2Stats))
-                    _textRenderer.DrawText(_hudPlayer2Stats, 50, height / 2, 16, width, height);
-                if (ConfigManager.Config.ShowColliderBounds)
-                    _textRenderer.DrawText("[DEBUG: COLLIDERS ON]", width - 250, 20, 14, width, height);
-            }
-            else
-            {
-                float y = 200;
-                for (int i = 0; i < _menuItems.Length; i++)
-                {
-                    string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
-                    _textRenderer.DrawText(text, 550, y + i * 40, 24, width, height);
-                }
-                string controls = "Input:\nTANK_1 - WASD SPACE LCTRL\nTANK_2 - ARROWS RSHIFT RCTRL\nMENU - WASD E";
-                _textRenderer.DrawText(controls, 50, 50, 16, width, height);
-                string buildInfo = $"Build: {TankGL_fbo.Core.GitBuildInfo.BuildDate}\nGit: {TankGL_fbo.Core.GitBuildInfo.Branch}@{TankGL_fbo.Core.GitBuildInfo.Commit}";
-                _textRenderer.DrawText(buildInfo, 50, height - 80, 16, width, height);
+                case SceneState.Level:
+                    if (!string.IsNullOrEmpty(_hudPlayer1Stats))
+                        _textRenderer.DrawText(_hudPlayer1Stats, statsX_PL1, statsY, statsFontSize, width, height);
+                    if (!string.IsNullOrEmpty(_hudPlayer2Stats))
+                        _textRenderer.DrawText(_hudPlayer2Stats, statsX_PL2, statsY, statsFontSize, width, height);
+                    if (ConfigManager.Config.ShowColliderBounds)
+                        _textRenderer.DrawText("[DEBUG: COLLIDERS ON]", statsCenterX, statsY, statsFontSize, width, height, Color.Coral);
+                    break;
+                case SceneState.Menu:
+                    for (int i = 0; i < _menuItems.Length; i++)
+                    {
+                        string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
+                        _textRenderer.DrawText(text, menuX, menuY + i * 40, menuFontSize, width, height);
+                    }
+                    break;
+                case SceneState.Info:
+                    break;
+                case SceneState.Options:
+                    for (int i = 0; i < _menuItems.Length; i++)
+                    {
+                        string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
+                        _textRenderer.DrawText(text, menuX, menuY + i * 40, menuFontSize, width, height);
+                    }
+                    string buildInfo = $"Build: {TankGL_fbo.Core.GitBuildInfo.BuildDate}\nGit: {TankGL_fbo.Core.GitBuildInfo.Branch}@{TankGL_fbo.Core.GitBuildInfo.Commit}";
+                    _textRenderer.DrawText(buildInfo, buildX, buildY, statsFontSize, width, height, Color.Coral);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -419,6 +444,7 @@ namespace TankGL_fbo.WPF
         {
             UnsubscribeFromEvents();
             ConfigManager.ConfigSaved -= OnConfigSaved;
+            ConfigManager.MenuFontSizeChanged -= OnMenuFontSizeChanged;
             _timer.Stop();
             _timer.Tick -= GameTimer_Tick;
             _assets?.Dispose();
