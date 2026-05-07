@@ -391,7 +391,7 @@ namespace TankGL_fbo.WPF
                 e.Handled = true;
                 return;
             }
-            HandleDebugBonuses(e);
+            HandleDebugLevelSwitch(e);
         }
 
         private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
@@ -419,24 +419,23 @@ namespace TankGL_fbo.WPF
             }
         }
 
-        private void HandleDebugBonuses(KeyEventArgs e)
+        private void HandleDebugLevelSwitch(KeyEventArgs e)
         {
-            if (_sceneManager.CurrentScene is LevelScene gameLevel)
+            if (!ConfigManager.Config.DebugMode) return;
+
+            IScene? targetScene = e.Key switch
             {
-                BonusType? bonus = e.Key switch
-                {
-                    Key.D1 or Key.NumPad1 => BonusType.SpeedUp,
-                    Key.D2 or Key.NumPad2 => BonusType.Shield,
-                    Key.D3 or Key.NumPad3 => BonusType.DamageBoost,
-                    Key.D4 or Key.NumPad4 => BonusType.AmmoRefill,
-                    Key.D5 or Key.NumPad5 => BonusType.FuelCan,
-                    _ => null
-                };
-                if (bonus.HasValue)
-                {
-                    int tankIndex = Keyboard.IsKeyDown(Key.LeftShift) || Keyboard.IsKeyDown(Key.RightShift) ? 1 : 0;
-                    gameLevel.ApplyBonus(tankIndex, bonus.Value);
-                }
+                Key.D1 => new Level1Scene(_sceneManager.RequestSceneChange),
+                Key.D2 => new Level2Scene(_sceneManager.RequestSceneChange),
+                Key.D3 => new Level3Scene(_sceneManager.RequestSceneChange),
+                Key.D4 => new Level4Scene(_sceneManager.RequestSceneChange),
+                _ => null
+            };
+
+            if (targetScene != null)
+            {
+                _sceneManager.ChangeScene(targetScene);
+                e.Handled = true;
             }
         }
 
