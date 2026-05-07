@@ -7,14 +7,12 @@ namespace TankGL_fbo.Core.Scenes;
 
 public sealed class OptionsScene : MenuSceneBase
 {
-    private readonly string[] _menuItems = new string[5];
+    private readonly string[] _menuItems = new string[6];
     private bool _unsavedChanges = false;
-
     private static readonly (int w, int h)[] Presets =
     {
         (1280, 720), (800, 600)
     };
-
     private static readonly int[] FontSizePresets = { 18, 24, 30, 36, 42 };
 
     public OptionsScene(Action<IScene>? requestSceneChange = null) : base(requestSceneChange) { }
@@ -53,9 +51,10 @@ public sealed class OptionsScene : MenuSceneBase
     {
         _menuItems[0] = $"Internal resolution: {ConfigManager.Config.ResolutionWidth}x{ConfigManager.Config.ResolutionHeight}";
         _menuItems[1] = $"Collider Borders: {(ConfigManager.Config.ShowColliderBounds ? "ON" : "OFF")}";
-        _menuItems[2] = $"Menu Font Size: {ConfigManager.Config.MenuFontSize}";
-        _menuItems[3] = "Reset to Default";
-        _menuItems[4] = "Back";
+        _menuItems[2] = $"Debug Mode: {(ConfigManager.Config.DebugMode ? "ON" : "OFF")}";
+        _menuItems[3] = $"Menu Font Size: {ConfigManager.Config.MenuFontSize}";
+        _menuItems[4] = "Reset to Default";
+        _menuItems[5] = "Back";
         return _menuItems;
     }
 
@@ -75,17 +74,22 @@ public sealed class OptionsScene : MenuSceneBase
                 _unsavedChanges = true;
                 break;
             case 2:
+                ConfigManager.Config.DebugMode = !ConfigManager.Config.DebugMode;
+                _unsavedChanges = true;
+                break;
+            case 3:
                 int nextFont = (GetCurrentFontSizeIndex() + 1) % FontSizePresets.Length;
                 ConfigManager.Config.MenuFontSize = FontSizePresets[nextFont];
                 ConfigManager.NotifyMenuFontSizeChanged(ConfigManager.Config.MenuFontSize);
                 _unsavedChanges = true;
                 break;
-            case 3:
+            case 4:
                 ConfigManager.Config = new GameConfig();
                 ConfigManager.NotifyMenuFontSizeChanged(ConfigManager.Config.MenuFontSize);
                 _unsavedChanges = true;
+                RequestSceneChange?.Invoke(new OptionsScene(RequestSceneChange));
                 break;
-            case 4:
+            case 5:
                 RequestSceneChange?.Invoke(new MenuScene(RequestSceneChange));
                 break;
         }

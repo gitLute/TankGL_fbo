@@ -30,7 +30,8 @@ public sealed class Tank : IUpdatable, IRenderable
         TexturePath = texturePath;
         Stats = stats;
         HP = MaxHP;
-        CooldownTimer = 0f;
+        CooldownTimer = 0.5f;
+        Rotation = (float)(new Random().NextDouble() * 2 * MathF.PI);
     }
 
     public void Update(float deltaTime)

@@ -23,6 +23,6 @@ public sealed class Level2Scene : LevelScene
 
     protected override IScene? CreateNextLevel()
     {
-        return new MenuScene(RequestSceneChange);
+        return new Level3Scene(RequestSceneChange);
     }
 }

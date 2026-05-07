@@ -7,15 +7,8 @@ public sealed class Background : IRenderable
 {
     public Vector2 Position { get; }
     public float Rotation => 0f;
-    public float Scale => 1.0f;
-    // if (entity is TankGL_fbo.Core.Entities.Wall)
-    // {
-    //     float aspect = (float)tex.Width / (float)tex.Height;
-    //     uvScale = new OpenTK.Mathematics.Vector2(
-    //         renderWidth / TileSize,
-    //         renderHeight * aspect / TileSize
-    //     );
-    // }
+    public float Scale => 2.0f;
+
     public int ZIndex => -100;
 
     public string TexturePath { get; }

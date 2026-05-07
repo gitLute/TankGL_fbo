@@ -7,7 +7,7 @@ public sealed class Bullet : IUpdatable, IRenderable
 {
     public Vector2 Position { get; private set; }
     public float Rotation { get; private set; }
-    public float Scale => 0.4f;
+    public float Scale => 1.0f;
     public int ZIndex => 4;
     public string TexturePath => "bullet.png";
 
