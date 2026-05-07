@@ -17,11 +17,11 @@ public sealed class InfoScene : IScene
 
     public void OnEnter()
     {
-        _backgrounds.Add(new Background(new Vector2(0, 0), new Vector2(640, 360), "tile.png", tile: true));
+        _backgrounds.Add(new Background(new Vector2(0, 0), new Vector2(640, 360), "blank.png", tile: true));
 
         _backgrounds.Add(new Background(
             position: new Vector2(0, 0),
-            halfSize: new Vector2(300, 200),
+            halfSize: new Vector2(400, 300),
             texturePath: "info.png",
             tile: false
         ));

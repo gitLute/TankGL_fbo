@@ -12,7 +12,7 @@ public sealed class OptionsScene : MenuSceneBase
 
     private static readonly (int w, int h)[] Presets =
     {
-        (1280, 720), (1920, 1080), (2560, 1440), (800, 600)
+        (1280, 720), (800, 600)
     };
 
     private static readonly int[] FontSizePresets = { 18, 24, 30, 36, 42 };
@@ -51,7 +51,7 @@ public sealed class OptionsScene : MenuSceneBase
 
     protected override string[] GetMenuItems()
     {
-        _menuItems[0] = $"Resolution: {ConfigManager.Config.ResolutionWidth}x{ConfigManager.Config.ResolutionHeight}";
+        _menuItems[0] = $"Internal resolution: {ConfigManager.Config.ResolutionWidth}x{ConfigManager.Config.ResolutionHeight}";
         _menuItems[1] = $"Collider Borders: {(ConfigManager.Config.ShowColliderBounds ? "ON" : "OFF")}";
         _menuItems[2] = $"Menu Font Size: {ConfigManager.Config.MenuFontSize}";
         _menuItems[3] = "Reset to Default";
@@ -68,6 +68,7 @@ public sealed class OptionsScene : MenuSceneBase
                 ConfigManager.Config.ResolutionWidth = Presets[nextRes].w;
                 ConfigManager.Config.ResolutionHeight = Presets[nextRes].h;
                 _unsavedChanges = true;
+                RequestSceneChange?.Invoke(new OptionsScene(RequestSceneChange));
                 break;
             case 1:
                 ConfigManager.Config.ShowColliderBounds = !ConfigManager.Config.ShowColliderBounds;
