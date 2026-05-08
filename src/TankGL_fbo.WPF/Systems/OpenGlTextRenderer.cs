@@ -34,7 +34,7 @@ namespace TankGL_fbo.WPF.Systems
                     g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
                     g.Clear(Color.Transparent);
 
-                    using (var font = new Font("Lucida console", 26, FontStyle.Regular))
+                    using (var font = new Font("Lucida console", 18, FontStyle.Regular))
                     {
                         float cellPixelSize = _atlasSize / (float)_charsPerRow;
                         for (int i = 0; i < 224; i++)

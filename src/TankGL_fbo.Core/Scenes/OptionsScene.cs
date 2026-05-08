@@ -13,7 +13,7 @@ public sealed class OptionsScene : MenuSceneBase
     {
         (1280, 720), (800, 600)
     };
-    private static readonly int[] FontSizePresets = { 18, 24, 30, 36, 42 };
+    private static readonly int[] FontSizePresets = {30, 36, 42, 48};
 
     public OptionsScene(Action<IScene>? requestSceneChange = null) : base(requestSceneChange) { }
 

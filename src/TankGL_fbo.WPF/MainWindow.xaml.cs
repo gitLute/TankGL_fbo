@@ -100,7 +100,7 @@ namespace TankGL_fbo.WPF
                 GL.Enable(EnableCap.Blend);
                 GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
                 _sceneManager = new SceneManager();
-                var initialScene = new MenuScene(_sceneManager.RequestSceneChange);
+                var initialScene = new InfoScene(_sceneManager.RequestSceneChange);
                 _sceneManager.ChangeScene(initialScene);
                 _isInitialized = true;
                 ConfigManager.ConfigSaved += OnConfigSaved;
@@ -346,16 +346,30 @@ namespace TankGL_fbo.WPF
                     for (int i = 0; i < _menuItems.Length; i++)
                     {
                         string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
-                        _textRenderer.DrawText(text, menuX, menuY + i * 40, menuFontSize, width, height);
+                        _textRenderer.DrawText(text, menuX, menuY + i * menuFontSize, menuFontSize, width, height);
                     }
                     break;
                 case SceneState.Info:
+                    float infoX = menuX;
+                    float infoY =(int)(height / 10);
+
+                    // foreach (var line in InfoScene.Instructions)
+                    // {
+                    //     _textRenderer.DrawText(line, infoX, infoY, menuFontSize, width, height, Color.White);
+                    //     infoY += menuFontSize * 1.2f;
+                    // }
+
+                    for (int i = 0; i < InfoScene.Instructions.Length; i++)
+                    {
+                        string text = InfoScene.Instructions[i];
+                        _textRenderer.DrawText(text, infoX, infoY + i * menuFontSize, menuFontSize, width, height);
+                    }
                     break;
                 case SceneState.Options:
                     for (int i = 0; i < _menuItems.Length; i++)
                     {
                         string text = i == _menuSelectedIndex ? $"> {_menuItems[i]} <" : _menuItems[i];
-                        _textRenderer.DrawText(text, menuX, menuY + i * 40, menuFontSize, width, height);
+                        _textRenderer.DrawText(text, menuX, menuY + i * menuFontSize, menuFontSize, width, height);
                     }
                     string buildInfo = $"Build: {TankGL_fbo.Core.GitBuildInfo.BuildDate}\nGit: {TankGL_fbo.Core.GitBuildInfo.Branch}@{TankGL_fbo.Core.GitBuildInfo.Commit}";
                     _textRenderer.DrawText(buildInfo, buildX, buildY, statsFontSize, width, height, Color.Coral);
