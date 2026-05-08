@@ -143,9 +143,6 @@ public abstract class LevelScene : IScene
 
     private void RaiseHudUpdate()
     {
-        // string p1 = string.Empty;
-        // string p2 = string.Empty;
-
         string p1, p2;
 
         var t1 = Tanks[0];
@@ -176,29 +173,40 @@ public abstract class LevelScene : IScene
     protected abstract void SetupLevel();
     protected virtual IScene? CreateNextLevel() => null;
 
-    protected static List<Wall> CreateOuterWalls(Background bg, float thickness = 20f, float outerExtent = 10000f)
+    protected static List<Wall> CreateOuterWalls(Background bg, float thickness = 50f)
     {
         var walls = new List<Wall>();
-        var half = bg.Bounds.HalfSize;
         var center = bg.Position;
-        float t2 = thickness / 2f;
-        float huge = outerExtent / 2f;
-        walls.Add(new Wall(
-            new Vector2(center.X, center.Y - half.Y - t2 - huge),
-            new Vector2(half.X + thickness + huge, huge + t2)
+        var half = bg.Bounds.HalfSize;
+        float ht = thickness / 2f;
+
+        float minX = center.X - half.X;
+        float maxX = center.X + half.X;
+        float minY = center.Y - half.Y;
+        float maxY = center.Y + half.Y;
+
+        float horizontalHalfWidth = half.X + thickness;
+
+        walls.Add(new Wall(     // down
+            position: new Vector2(center.X, minY - ht),
+            halfSize: new Vector2(horizontalHalfWidth, ht)
         ));
-        walls.Add(new Wall(
-            new Vector2(center.X, center.Y + half.Y + t2 + huge),
-            new Vector2(half.X + thickness + huge, huge + t2)
+
+        walls.Add(new Wall(     // up
+            position: new Vector2(center.X, maxY + ht),
+            halfSize: new Vector2(horizontalHalfWidth, ht)
         ));
-        walls.Add(new Wall(
-            new Vector2(center.X - half.X - t2 - huge, center.Y),
-            new Vector2(huge + t2, half.Y)
+
+        walls.Add(new Wall(     // left
+            position: new Vector2(minX - ht, center.Y),
+            halfSize: new Vector2(ht, half.Y)
         ));
-        walls.Add(new Wall(
-            new Vector2(center.X + half.X + t2 + huge, center.Y),
-            new Vector2(huge + t2, half.Y)
+
+        walls.Add(new Wall(     //right
+            position: new Vector2(maxX + ht, center.Y),
+            halfSize: new Vector2(ht, half.Y)
         ));
+
         return walls;
     }
 }
