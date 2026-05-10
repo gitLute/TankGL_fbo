@@ -7,33 +7,47 @@ using PixelFormat = System.Drawing.Imaging.PixelFormat;
 
 namespace TankGL_fbo.WPF.Systems
 {
+    /// <summary>
+    /// Рендерер текста для OpenGL.
+    /// Генерирует текстурный атлас шрифта с помощью GDI+ и отрисовывает строки
+    /// посредством немедленного режима (GL.Begin/GL.End) для совместимости и простоты.
+    /// </summary>
     public class OpenGlTextRenderer : IDisposable
     {
+        /// <summary>Идентификатор текстуры атласа шрифта в OpenGL.</summary>
         private int _textureId;
+        /// <summary>Размер текстурного атласа в пикселях (квадратный).</summary>
         private readonly int _atlasSize = 512;
+        /// <summary>Количество символов в одной строке атласа.</summary>
         private readonly int _charsPerRow = 16;
+        /// <summary>Нормализованный шаг UV-координат для одного символа.</summary>
         private readonly float _cellStep;
+        /// <summary>Начальный символ в таблице ASCII для генерации атласа (пробел).</summary>
         private const char StartChar = (char)32;
 
+        /// <summary>
+        /// Инициализирует рендерер текста и генерирует атлас шрифта.
+        /// </summary>
         public OpenGlTextRenderer()
         {
             _cellStep = 1.0f / _charsPerRow;
             _textureId = GenerateFontAtlas();
         }
 
+        /// <summary>
+        /// Создает текстуру атласа шрифта, отрисовывая символы на Bitmap с помощью GDI+.
+        /// </summary>
+        /// <returns>Идентификатор созданной OpenGL-текстуры.</returns>
         private int GenerateFontAtlas()
         {
             int id = GL.GenTexture();
             GL.BindTexture(TextureTarget.Texture2D, id);
-
             using (var bitmap = new Bitmap(_atlasSize, _atlasSize, PixelFormat.Format32bppArgb))
             {
                 using (var g = Graphics.FromImage(bitmap))
                 {
-                    //g.TextRenderingHint = TextRenderingHint.AntiAliasGridFit;
                     g.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
                     g.Clear(Color.Transparent);
-
                     using (var font = new Font("Lucida console", 18, FontStyle.Regular))
                     {
                         float cellPixelSize = _atlasSize / (float)_charsPerRow;
@@ -46,26 +60,31 @@ namespace TankGL_fbo.WPF.Systems
                         }
                     }
                 }
-
                 BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
-
                 GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba,
                     data.Width, data.Height, 0,
                     OpenTK.Graphics.OpenGL.PixelFormat.Bgra, PixelType.UnsignedByte, data.Scan0);
-
                 bitmap.UnlockBits(data);
             }
-
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
             GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-
             return id;
         }
 
+        /// <summary>
+        /// Отрисовывает указанную строку текста в экранных координатах.
+        /// Поддерживает перенос строк и настройку цвета.
+        /// </summary>
+        /// <param name="text">Текст для отрисовки.</param>
+        /// <param name="x">X-координата начала текста (левый верхний угол).</param>
+        /// <param name="y">Y-координата начала текста.</param>
+        /// <param name="fontSize">Размер шрифта в пикселях.</param>
+        /// <param name="screenWidth">Ширина экрана/вьюпорта.</param>
+        /// <param name="screenHeight">Высота экрана/вьюпорта.</param>
+        /// <param name="textColor">Цвет текста (по умолчанию белый).</param>
         public void DrawText(string text, float x, float y, float fontSize, int screenWidth, int screenHeight, Color? textColor = null)
         {
             if (string.IsNullOrEmpty(text)) return;
-
             float startX = x;
             float currentX = x;
             float currentY = y;
@@ -84,7 +103,6 @@ namespace TankGL_fbo.WPF.Systems
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
             GL.BindTexture(TextureTarget.Texture2D, _textureId);
-
             GL.Color4(textColor ?? Color.White);
 
             GL.Begin(PrimitiveType.Quads);
@@ -96,10 +114,8 @@ namespace TankGL_fbo.WPF.Systems
                     currentY += lineHeight;
                     continue;
                 }
-
                 int idx = c - StartChar;
                 if (idx < 0 || idx >= 224) idx = 0;
-
                 float u = (idx % _charsPerRow) * _cellStep;
                 float v = (idx / _charsPerRow) * _cellStep;
 
@@ -111,7 +127,6 @@ namespace TankGL_fbo.WPF.Systems
                 GL.Vertex2(currentX + fontSize, currentY + fontSize);
                 GL.TexCoord2(u, v + _cellStep);
                 GL.Vertex2(currentX, currentY + fontSize);
-
                 currentX += charWidth;
             }
             GL.End();
@@ -124,6 +139,9 @@ namespace TankGL_fbo.WPF.Systems
             GL.PopMatrix();
         }
 
+        /// <summary>
+        /// Освобождает текстуру атласа шрифта из памяти видеокарты.
+        /// </summary>
         public void Dispose()
         {
             if (_textureId != 0)

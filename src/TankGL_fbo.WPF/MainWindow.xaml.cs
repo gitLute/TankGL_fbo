@@ -24,39 +24,76 @@ using Vector2 = TankGL_fbo.Core.Contracts.Vector2;
 
 namespace TankGL_fbo.WPF
 {
+    /// <summary>
+    /// Главное окно приложения WPF.
+    /// Инициализирует контекст OpenGL, управляет игровым циклом, обрабатывает пользовательский ввод,
+    /// подписывается на события сцен и отрисовывает игровой мир вместе с интерфейсом (HUD/Меню).
+    /// </summary>
     public partial class MainWindow : Window
     {
+        /// <summary>Менеджер сцен, управляющий переходами и обновлениями игровых состояний.</summary>
         private SceneManager _sceneManager = null!;
+        /// <summary>Менеджер ресурсов для загрузки и кэширования шейдеров и текстур.</summary>
         private AssetManager _assets = null!;
+        /// <summary>Активная шейдерная программа для рендеринга спрайтов.</summary>
         private Shader _shader = null!;
+        /// <summary>Элемент управления OpenGL, встроенный в WPF через WindowsFormsHost.</summary>
         private GLControl _glControl = null!;
+        /// <summary>Рендерер текста для отрисовки HUD, меню и отладочной информации.</summary>
         private OpenGlTextRenderer? _textRenderer;
+        /// <summary>Флаг успешной инициализации графической подсистемы и ресурсов.</summary>
         private bool _isInitialized;
+        /// <summary>Матрица ортографической проекции для текущих виртуальных размеров экрана.</summary>
         private Matrix4 _projection;
+        /// <summary>Секундомер для точного измерения времени между кадрами (delta time).</summary>
         private readonly Stopwatch _stopwatch = new();
+        /// <summary>Таймер диспетчера WPF, запускающий тики игрового цикла.</summary>
         private readonly DispatcherTimer _timer = new();
+        /// <summary>Очередь объектов, подлежащих отрисовке в текущем кадре.</summary>
         private readonly List<IRenderable> _renderQueue = new();
+        /// <summary>Словарь активных действий игроков, обновляемый при вводе с клавиатуры.</summary>
         private readonly Dictionary<int, HashSet<PlayerAction>> _activeInputs = new() { [0] = new(), [1] = new() };
+        /// <summary>Карта соответствия клавиш WPF действиям конкретных игроков.</summary>
         private readonly Dictionary<Key, (int playerId, PlayerAction action)> _keyMap = new();
-        private string _hudPlayer1Stats = string.Empty;
-        private string _hudPlayer2Stats = string.Empty;
-        private string[] _menuItems = Array.Empty<string>();
-        private int _menuSelectedIndex;
-        private enum SceneState { Menu, Info, Level, Options, Other }
-        private SceneState _currentSceneState = SceneState.Other;
-        private float VirtualWidth => ConfigManager.Config.ResolutionWidth;
-        private float VirtualHeight => ConfigManager.Config.ResolutionHeight;
-        private int _vpX, _vpY, _vpW, _vpH;
 
+        /// <summary>Строка статистики первого игрока для отображения в HUD.</summary>
+        private string _hudPlayer1Stats = string.Empty;
+        /// <summary>Строка статистики второго игрока для отображения в HUD.</summary>
+        private string _hudPlayer2Stats = string.Empty;
+        /// <summary>Массив пунктов текущего меню.</summary>
+        private string[] _menuItems = Array.Empty<string>();
+        /// <summary>Индекс выбранного пункта меню.</summary>
+        private int _menuSelectedIndex;
+
+        /// <summary>Перечисление состояний текущей сцены для корректной логики отрисовки интерфейса.</summary>
+        private enum SceneState { Menu, Info, Level, Options, Other }
+        /// <summary>Текущее состояние сцены, определяющее способ отрисовки HUD.</summary>
+        private SceneState _currentSceneState = SceneState.Other;
+
+        /// <summary>Виртуальная ширина экрана, полученная из глобальной конфигурации.</summary>
+        private float VirtualWidth => ConfigManager.Config.ResolutionWidth;
+        /// <summary>Виртуальная высота экрана, полученная из глобальной конфигурации.</summary>
+        private float VirtualHeight => ConfigManager.Config.ResolutionHeight;
+
+        /// <summary>Координаты и размеры рассчитанного вьюпорта для сохранения пропорций (Letterboxing).</summary>
+        private int _vpX, _vpY, _vpW, _vpH;
+        /// <summary>Кэшированный размер шрифта меню.</summary>
         private int _cachedMenuFontSize = 24;
+        /// <summary>Кэшированный размер шрифта статистики.</summary>
         private int _cachedStatsFontSize = 16;
 
+        /// <summary>
+        /// Инициализирует компоненты окна и настраивает карту ввода.
+        /// </summary>
         public MainWindow()
         {
             InitializeComponent();
             SetupInputMap();
         }
 
+        /// <summary>
+        /// Обработчик события загрузки окна. Запускает последовательную инициализацию подсистем.
+        /// </summary>
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
             InitializeOpenGL();
@@ -65,6 +102,10 @@ namespace TankGL_fbo.WPF
             StartGameLoop();
         }
 
+        /// <summary>
+        /// Создает и настраивает элемент управления GLControl с профилем совместимости OpenGL 3.3.
+        /// Внедряет его в WindowsFormsHost и подписывается на события жизненного цикла GL.
+        /// </summary>
         private void InitializeOpenGL()
         {
             var settings = new GLControlSettings
@@ -81,14 +122,16 @@ namespace TankGL_fbo.WPF
             Host.Child = _glControl;
         }
 
+        /// <summary>
+        /// Загружает конфигурацию, инициализирует менеджер ресурсов, шейдеры, рендерер текста и менеджер сцен.
+        /// Устанавливает начальную сцену (InfoScene) и настраивает состояние OpenGL.
+        /// </summary>
         private void InitializeGameSystems()
         {
             ConfigManager.Load();
-
             _cachedMenuFontSize = ConfigManager.Config.MenuFontSize;
             _cachedStatsFontSize = _cachedMenuFontSize * 2 / 3;
             ConfigManager.MenuFontSizeChanged += OnMenuFontSizeChanged;
-
             string assetsPath = Path.Combine(AppContext.BaseDirectory, "Assets");
             _assets = new AssetManager(assetsPath);
             try
@@ -113,18 +156,28 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Обновляет кэшированные размеры шрифтов при изменении настроек в меню опций.
+        /// </summary>
+        /// <param name="newSize">Новый размер шрифта меню.</param>
         private void OnMenuFontSizeChanged(int newSize)
         {
             _cachedMenuFontSize = newSize;
             _cachedStatsFontSize = newSize * 2 / 3;
         }
 
+        /// <summary>
+        /// Пересчитывает параметры вьюпорта при сохранении новой конфигурации (например, смене разрешения).
+        /// </summary>
         private void OnConfigSaved()
         {
             if (!_isInitialized) return;
             Dispatcher.Invoke(() => GlControl_Resize(_glControl, EventArgs.Empty));
         }
 
+        /// <summary>
+        /// Запускает секундомер и таймер диспетчера для начала выполнения игрового цикла.
+        /// </summary>
         private void StartGameLoop()
         {
             _stopwatch.Start();
@@ -133,6 +186,9 @@ namespace TankGL_fbo.WPF
             _timer.Start();
         }
 
+        /// <summary>
+        /// Подписывается на глобальные события менеджера сцен и события текущей активной сцены.
+        /// </summary>
         private void SubscribeToEvents()
         {
             _sceneManager.SceneChanged += OnSceneChanged;
@@ -140,6 +196,9 @@ namespace TankGL_fbo.WPF
             SubscribeToCurrentSceneEvents();
         }
 
+        /// <summary>
+        /// Подписывается на специфичные события текущей сцены (обновление HUD уровня или состояния меню).
+        /// </summary>
         private void SubscribeToCurrentSceneEvents()
         {
             if (_sceneManager.CurrentScene is LevelScene level)
@@ -152,6 +211,9 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Отписывается от глобальных событий менеджера сцен для предотвращения утечек памяти.
+        /// </summary>
         private void UnsubscribeFromEvents()
         {
             if (_sceneManager != null)
@@ -162,6 +224,9 @@ namespace TankGL_fbo.WPF
             UnsubscribeFromCurrentSceneEvents();
         }
 
+        /// <summary>
+        /// Отписывается от событий текущей сцены при её смене или закрытии окна.
+        /// </summary>
         private void UnsubscribeFromCurrentSceneEvents()
         {
             if (_sceneManager?.CurrentScene is LevelScene level)
@@ -174,6 +239,10 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Обработчик события смены сцены. Обновляет внутреннее состояние интерфейса,
+        /// переподписывается на события новой сцены и очищает словарь активного ввода.
+        /// </summary>
         private void OnSceneChanged(object? sender, IScene newScene)
         {
             UnsubscribeFromCurrentSceneEvents();
@@ -193,23 +262,36 @@ namespace TankGL_fbo.WPF
             foreach (var set in _activeInputs.Values) set.Clear();
         }
 
+        /// <summary>
+        /// Обработчик запроса на смену сцены от игровых систем. Запускает переход с задержкой 0.3с.
+        /// </summary>
         private void OnSceneChangeRequested(object? sender, IScene requestedScene)
         {
             _sceneManager.ChangeScene(requestedScene, 0.3f);
         }
 
+        /// <summary>
+        /// Обновляет строки статистики игроков при получении данных от текущего уровня.
+        /// </summary>
         private void OnHudDataUpdated(object? sender, (string p1Stats, string p2Stats) hudData)
         {
             _hudPlayer1Stats = hudData.p1Stats;
             _hudPlayer2Stats = hudData.p2Stats;
         }
 
+        /// <summary>
+        /// Обновляет пункты меню и выбранный индекс при изменении состояния меню.
+        /// </summary>
         private void OnMenuStateChanged(object? sender, (string[] items, int selectedIndex) menuState)
         {
             _menuItems = menuState.items;
             _menuSelectedIndex = menuState.selectedIndex;
         }
 
+        /// <summary>
+        /// Основной тик игрового цикла. Вычисляет delta time, ограничивает его,
+        /// обновляет менеджер сцен и инициирует перерисовку GLControl.
+        /// </summary>
         private void GameTimer_Tick(object? sender, EventArgs e)
         {
             if (!_isInitialized) return;
@@ -219,8 +301,13 @@ namespace TankGL_fbo.WPF
             _glControl.Invalidate();
         }
 
+        /// <summary>Заглушка для события загрузки GLControl.</summary>
         private void GlControl_Load(object? sender, EventArgs e) { }
 
+        /// <summary>
+        /// Пересчитывает матрицу проекции и параметры вьюпорта при изменении размера окна.
+        /// Реализует логику Letterboxing для сохранения виртуальных пропорций экрана.
+        /// </summary>
         private void GlControl_Resize(object? sender, EventArgs e)
         {
             if (!_isInitialized || _glControl == null || _glControl.ClientSize.Width <= 0 || _glControl.ClientSize.Height <= 0) return;
@@ -238,6 +325,10 @@ namespace TankGL_fbo.WPF
             _projection = Matrix4.CreateOrthographic(VirtualWidth, VirtualHeight, -1, 1);
         }
 
+        /// <summary>
+        /// Основной метод отрисовки кадра. Очищает буферы, рендерит игровую сцену,
+        /// отладочные границы коллизий и интерфейс (HUD), затем меняет буферы.
+        /// </summary>
         private void GlControl_Paint(object? sender, System.Windows.Forms.PaintEventArgs e)
         {
             if (!_isInitialized || _shader == null || _glControl == null) return;
@@ -255,6 +346,10 @@ namespace TankGL_fbo.WPF
             _glControl.SwapBuffers();
         }
 
+        /// <summary>
+        /// Отрисовывает все объекты текущей сцены с применением шейдеров, текстур,
+        /// UV-масштабирования и матриц трансформации (масштаб, поворот, перемещение).
+        /// </summary>
         private void RenderScene()
         {
             GL.Enable(EnableCap.Blend);
@@ -295,6 +390,10 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Отрисовывает отладочные рамки (wireframe) коллизий для всех объектов сцены,
+        /// если включен соответствующий режим в конфигурации.
+        /// </summary>
         private void RenderDebugBounds()
         {
             if (!ConfigManager.Config.ShowColliderBounds) return;
@@ -312,15 +411,17 @@ namespace TankGL_fbo.WPF
             GL.PolygonMode(MaterialFace.FrontAndBack, PolygonMode.Fill);
         }
 
+        /// <summary>
+        /// Отрисовывает интерфейс пользователя (HUD, меню, настройки, справку)
+        /// в зависимости от текущего состояния сцены с использованием текстурного шрифта.
+        /// </summary>
         private void DrawHud()
         {
             if (_textRenderer == null) return;
             int width = (int)VirtualWidth;
             int height = (int)VirtualHeight;
-
             int menuFontSize = _cachedMenuFontSize;
             int statsFontSize = _cachedStatsFontSize;
-
             float menuFontProcentage = menuFontSize / height;
             float statFontProcentage = statsFontSize / height;
             float menuX = (int)(width / (10 + menuFontProcentage));
@@ -331,7 +432,6 @@ namespace TankGL_fbo.WPF
             float statsCenterX = (int)(width / (2 + statFontProcentage));
             float buildX = (int)(width / (10 + statFontProcentage));
             float buildY = (int)(height / 10);
-
             switch (_currentSceneState)
             {
                 case SceneState.Level:
@@ -351,14 +451,7 @@ namespace TankGL_fbo.WPF
                     break;
                 case SceneState.Info:
                     float infoX = menuX;
-                    float infoY =(int)(height / 10);
-
-                    // foreach (var line in InfoScene.Instructions)
-                    // {
-                    //     _textRenderer.DrawText(line, infoX, infoY, menuFontSize, width, height, Color.White);
-                    //     infoY += menuFontSize * 1.2f;
-                    // }
-
+                    float infoY = (int)(height / 10);
                     for (int i = 0; i < InfoScene.Instructions.Length; i++)
                     {
                         string text = InfoScene.Instructions[i];
@@ -379,6 +472,9 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Инициализирует словарь соответствия клавиш клавиатуры действиям игроков и навигации по меню.
+        /// </summary>
         private void SetupInputMap()
         {
             _keyMap[Key.E] = (0, PlayerAction.Confirm);
@@ -396,6 +492,10 @@ namespace TankGL_fbo.WPF
             _keyMap[Key.RightCtrl] = (1, PlayerAction.Fire);
         }
 
+        /// <summary>
+        /// Обрабатывает нажатия клавиш: регистрирует действия игроков, проверяет глобальные
+        /// и отладочные сочетания клавиш. Помечает событие как обработанное.
+        /// </summary>
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
             HandleGlobalShortcuts(e);
@@ -408,6 +508,9 @@ namespace TankGL_fbo.WPF
             HandleDebugLevelSwitch(e);
         }
 
+        /// <summary>
+        /// Обрабатывает отпускания клавиш: удаляет соответствующие действия из словаря активного ввода.
+        /// </summary>
         private void Window_PreviewKeyUp(object sender, KeyEventArgs e)
         {
             if (_keyMap.TryGetValue(e.Key, out var map))
@@ -417,6 +520,10 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Обрабатывает глобальные горячие клавиши, доступные в любом состоянии приложения.
+        /// F12 - возврат в главное меню, F1 - экран справки.
+        /// </summary>
         private void HandleGlobalShortcuts(KeyEventArgs e)
         {
             if (e.Key == Key.F12)
@@ -433,10 +540,13 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Обрабатывает переключение уровней по клавишам D1-D4.
+        /// Работает только при включенном отладочном режиме в конфигурации.
+        /// </summary>
         private void HandleDebugLevelSwitch(KeyEventArgs e)
         {
             if (!ConfigManager.Config.DebugMode) return;
-
             IScene? targetScene = e.Key switch
             {
                 Key.D1 => new Level1Scene(_sceneManager.RequestSceneChange),
@@ -445,7 +555,6 @@ namespace TankGL_fbo.WPF
                 Key.D4 => new Level4Scene(_sceneManager.RequestSceneChange),
                 _ => null
             };
-
             if (targetScene != null)
             {
                 _sceneManager.ChangeScene(targetScene);
@@ -453,6 +562,10 @@ namespace TankGL_fbo.WPF
             }
         }
 
+        /// <summary>
+        /// Освобождает неуправляемые ресурсы OpenGL, отписывается от всех событий,
+        /// останавливает таймеры и вызывает базовую реализацию закрытия окна.
+        /// </summary>
         protected override void OnClosed(EventArgs e)
         {
             UnsubscribeFromEvents();
