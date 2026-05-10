@@ -9,6 +9,11 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+dotnet test
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
 dotnet build -c Release
 if [ $? -ne 0 ]; then
     exit 1

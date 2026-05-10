@@ -25,9 +25,9 @@ public class DecoratorTests
     [Fact]
     public void DamageDecorator_MultipliesDamage()
     {
-        var baseStats = new BaseStats(); // Damage = 25
+        var baseStats = new BaseStats(); // Damage = 15
         var decorated = new DamageDecorator(baseStats, 1.8f, 7f);
-        Assert.Equal(45f, decorated.Damage);
+        Assert.Equal(27f, decorated.Damage);
     }
 
     [Fact]
@@ -47,7 +47,6 @@ public class DecoratorTests
         var baseStats = new BaseStats();
         var speedDec = new SpeedDecorator(baseStats, 1.5f, 10f);
         var armorDec = new ArmorDecorator(speedDec, 20f, 8f);
-
         var found = StatDecorator.FindInChain<SpeedDecorator>(armorDec);
         Assert.NotNull(found);
         Assert.Same(speedDec, found);

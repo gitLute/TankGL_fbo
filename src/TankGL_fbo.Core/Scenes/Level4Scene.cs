@@ -51,7 +51,7 @@ public sealed class Level4Scene : LevelScene
         Tanks.Add(new Tank(p2Spawn, "tank_blue.png", new BaseStats()));
     }
 
-    protected override IScene? CreateNextLevel() => new Level4Scene(RequestSceneChange);
+    protected override IScene? CreateNextLevel() => new Level3Scene(RequestSceneChange);
 
     private bool[,] GenerateLineBasedGrid()
     {

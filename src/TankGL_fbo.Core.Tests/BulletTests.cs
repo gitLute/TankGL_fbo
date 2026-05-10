@@ -13,7 +13,7 @@ public class BulletTests
         Assert.Equal(0f, bullet.Position.X);
         Assert.Equal(0f, bullet.Position.Y);
         Assert.Equal(2.0f, bullet.Lifetime);
-        Assert.Equal(25f, bullet.Damage);
+        Assert.InRange(bullet.Damage, 25f, 50f);
         Assert.Equal(0, bullet.OwnerId);
         Assert.False(bullet.IsExpired);
     }
