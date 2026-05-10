@@ -28,6 +28,7 @@ public sealed class InfoScene : IScene
         " E - Select",
         " F1 - Show info screen",
         " F12 - Exit to Menu",
+        " ~ - Open options",
         "",
         "Press E to continue"
     };
@@ -41,13 +42,6 @@ public sealed class InfoScene : IScene
     {
         SessionState.Reset();
         _backgrounds.Add(new Background(new Vector2(0, 0), new Vector2(640, 360), "blank.png", tile: true));
-
-        // _backgrounds.Add(new Background(
-        //     position: new Vector2(0, 0),
-        //     halfSize: new Vector2(400, 300),
-        //     texturePath: "info.png",
-        //     tile: false
-        // ));
     }
 
     public void OnExit()

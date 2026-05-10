@@ -432,15 +432,18 @@ namespace TankGL_fbo.WPF
             float statsCenterX = (int)(width / (2 + statFontProcentage));
             float buildX = (int)(width / (10 + statFontProcentage));
             float buildY = (int)(height / 10);
+            string debugMessage = string.Empty;
             switch (_currentSceneState)
             {
                 case SceneState.Level:
+                    if (ConfigManager.Config.ShowColliderBounds) debugMessage += "COLLIDERS ENABLED\n";
+                    if (ConfigManager.Config.DebugMode) debugMessage += "DEBUG SHORTCUTS ENABLED\n";
                     if (!string.IsNullOrEmpty(_hudPlayer1Stats))
                         _textRenderer.DrawText(_hudPlayer1Stats, statsX_PL1, statsY, statsFontSize, width, height);
                     if (!string.IsNullOrEmpty(_hudPlayer2Stats))
                         _textRenderer.DrawText(_hudPlayer2Stats, statsX_PL2, statsY, statsFontSize, width, height);
-                    if (ConfigManager.Config.ShowColliderBounds)
-                        _textRenderer.DrawText("[DEBUG: COLLIDERS ON]", statsCenterX, statsY, statsFontSize, width, height, Color.Coral);
+                    if (!string.IsNullOrEmpty(_hudPlayer2Stats))
+                        _textRenderer.DrawText(debugMessage, 0, 0, statsFontSize, width, height, Color.Coral);
                     break;
                 case SceneState.Menu:
                     for (int i = 0; i < _menuItems.Length; i++)
@@ -535,6 +538,12 @@ namespace TankGL_fbo.WPF
             if (e.Key == Key.F1)
             {
                 _sceneManager.ChangeScene(new InfoScene(_sceneManager.RequestSceneChange));
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.Oem3)
+            {
+                _sceneManager.ChangeScene(new OptionsScene(_sceneManager.RequestSceneChange));
                 e.Handled = true;
                 return;
             }

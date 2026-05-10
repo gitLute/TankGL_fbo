@@ -9,6 +9,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+dotnet test
+if %errorlevel% neq 0 (
+    exit /b 1
+)
+
 dotnet build -c Release
 if %errorlevel% neq 0 (
     exit /b 1

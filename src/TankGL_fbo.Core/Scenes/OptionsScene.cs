@@ -51,7 +51,7 @@ public sealed class OptionsScene : MenuSceneBase
     {
         _menuItems[0] = $"Internal resolution: {ConfigManager.Config.ResolutionWidth}x{ConfigManager.Config.ResolutionHeight}";
         _menuItems[1] = $"Collider Borders: {(ConfigManager.Config.ShowColliderBounds ? "ON" : "OFF")}";
-        _menuItems[2] = $"Debug Mode: {(ConfigManager.Config.DebugMode ? "ON" : "OFF")}";
+        _menuItems[2] = $"Debug shortcuts: {(ConfigManager.Config.DebugMode ? "ON" : "OFF")}";
         _menuItems[3] = $"Menu Font Size: {ConfigManager.Config.MenuFontSize}";
         _menuItems[4] = "Reset to Default";
         _menuItems[5] = "Back";
