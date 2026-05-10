@@ -33,35 +33,32 @@ public sealed class CollisionSystem
             Vector2 posAfterX = new Vector2(prevPos.X + delta.X, prevPos.Y);
             var boundsAfterX = new RectAABB(posAfterX, tank.Bounds.HalfSize);
             bool hitX = false;
+
             foreach (var wall in _walls)
-            {
                 if (boundsAfterX.Intersects(wall.Bounds)) { hitX = true; break; }
-            }
 
             foreach (var otherTank in _tanks)
             {
-                if (otherTank.IsDestroyed) continue;
-                if (otherTank == tank) continue;
+                if (otherTank.IsDestroyed || otherTank == tank) continue;
                 if (boundsAfterX.Intersects(otherTank.Bounds)) { hitX = true; break; }
             }
+
             Vector2 resolvedPos = hitX ? new Vector2(prevPos.X, prevPos.Y) : posAfterX;
 
             Vector2 posAfterY = new Vector2(resolvedPos.X, prevPos.Y + delta.Y);
             var boundsAfterY = new RectAABB(posAfterY, tank.Bounds.HalfSize);
             bool hitY = false;
+
             foreach (var wall in _walls)
-            {
                 if (boundsAfterY.Intersects(wall.Bounds)) { hitY = true; break; }
-            }
 
             foreach (var otherTank in _tanks)
             {
-                if (otherTank.IsDestroyed) continue;
-                if (otherTank == tank) continue;
+                if (otherTank.IsDestroyed || otherTank == tank) continue;
                 if (boundsAfterY.Intersects(otherTank.Bounds)) { hitY = true; break; }
             }
-            resolvedPos = hitY ? new Vector2(resolvedPos.X, prevPos.Y) : posAfterY;
 
+            resolvedPos = hitY ? new Vector2(resolvedPos.X, prevPos.Y) : posAfterY;
             tank.Position = resolvedPos;
         }
 
@@ -98,8 +95,7 @@ public sealed class CollisionSystem
             for (int j = 0; j < _tanks.Count; j++)
             {
                 var tank = _tanks[j];
-                if (tank.IsDestroyed) continue;
-                if (j == bullet.OwnerId) continue;
+                if (tank.IsDestroyed || j == bullet.OwnerId) continue;
 
                 if (bullet.Bounds.Intersects(tank.Bounds))
                 {
@@ -118,40 +114,22 @@ public sealed class CollisionSystem
             case BonusType.SpeedUp:
                 {
                     var existing = StatDecorator.FindInChain<SpeedDecorator>(tank.Stats);
-                    if (existing != null)
-                    {
-                        existing.Refresh(10f);
-                    }
-                    else
-                    {
-                        tank.Stats = new SpeedDecorator(tank.Stats, 1.5f, 10f);
-                    }
+                    if (existing != null) existing.Refresh(10f);
+                    else tank.Stats = new SpeedDecorator(tank.Stats, 1.5f, 10f);
                     break;
                 }
             case BonusType.Shield:
                 {
                     var existing = StatDecorator.FindInChain<ArmorDecorator>(tank.Stats);
-                    if (existing != null)
-                    {
-                        existing.Refresh(8f);
-                    }
-                    else
-                    {
-                        tank.Stats = new ArmorDecorator(tank.Stats, 20f, 8f);
-                    }
+                    if (existing != null) existing.Refresh(8f);
+                    else tank.Stats = new ArmorDecorator(tank.Stats, 20f, 8f);
                     break;
                 }
             case BonusType.DamageBoost:
                 {
                     var existing = StatDecorator.FindInChain<DamageDecorator>(tank.Stats);
-                    if (existing != null)
-                    {
-                        existing.Refresh(7f);
-                    }
-                    else
-                    {
-                        tank.Stats = new DamageDecorator(tank.Stats, 1.8f, 7f);
-                    }
+                    if (existing != null) existing.Refresh(7f);
+                    else tank.Stats = new DamageDecorator(tank.Stats, 1.8f, 7f);
                     break;
                 }
             case BonusType.AmmoRefill:
@@ -160,6 +138,28 @@ public sealed class CollisionSystem
             case BonusType.FuelCan:
                 tank.Stats.Fuel = Math.Min(tank.Stats.Fuel + 40f, 100f);
                 break;
+
+            case BonusType.SpeedDown:
+                {
+                    var existing = StatDecorator.FindInChain<SpeedDecorator>(tank.Stats);
+                    if (existing != null) existing.Refresh(8f);
+                    else tank.Stats = new SpeedDecorator(tank.Stats, 0.5f, 8f);
+                    break;
+                }
+            case BonusType.ArmorBreak:
+                {
+                    var existing = StatDecorator.FindInChain<ArmorDecorator>(tank.Stats);
+                    if (existing != null) existing.Refresh(10f);
+                    else tank.Stats = new ArmorDecorator(tank.Stats, -20f, 10f);
+                    break;
+                }
+            case BonusType.DamageDown:
+                {
+                    var existing = StatDecorator.FindInChain<DamageDecorator>(tank.Stats);
+                    if (existing != null) existing.Refresh(9f);
+                    else tank.Stats = new DamageDecorator(tank.Stats, 0.4f, 9f);
+                    break;
+                }
         }
     }
 }

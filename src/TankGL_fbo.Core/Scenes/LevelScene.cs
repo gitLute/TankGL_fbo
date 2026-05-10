@@ -18,22 +18,20 @@ public abstract class LevelScene : IScene
     protected readonly List<Background> Backgrounds = [];
 
     protected Action<IScene>? RequestSceneChange => _requestSceneChange;
+    private readonly Action<IScene>? _requestSceneChange;
 
     private InputSystem _inputSystem = null!;
     private CollisionSystem _collisionSystem = null!;
     private SpawnSystem _spawnSystem = null!;
+
     private double _accumulator;
     private const double FixedDt = 1.0 / 60.0;
-    private readonly Action<IScene>? _requestSceneChange;
     private bool _levelCompleted;
-
     private float _hudUpdateTimer = 0f;
     private const float HudUpdateInterval = 0.1f;
 
     public IReadOnlyList<Tank> PublicTanks => Tanks;
-
     public event EventHandler<(string p1Stats, string p2Stats)>? HudDataUpdated;
-
 
     protected LevelScene(Action<IScene>? requestSceneChange = null)
     {
@@ -55,7 +53,6 @@ public abstract class LevelScene : IScene
         _levelCompleted = false;
         Bullets.Clear();
         Bonuses.Clear();
-
         RaiseHudUpdate();
     }
 
@@ -94,6 +91,12 @@ public abstract class LevelScene : IScene
             if (Tanks.Any(t => t.IsDestroyed))
             {
                 _levelCompleted = true;
+
+                if (Tanks[0].IsDestroyed && !Tanks[1].IsDestroyed)
+                    SessionState.RecordWin(1);
+                else if (Tanks[1].IsDestroyed && !Tanks[0].IsDestroyed)
+                    SessionState.RecordWin(0);
+
                 var nextLevel = CreateNextLevel();
                 if (nextLevel != null)
                 {
@@ -101,7 +104,6 @@ public abstract class LevelScene : IScene
                 }
                 break;
             }
-
             _accumulator -= FixedDt;
         }
 
@@ -130,7 +132,6 @@ public abstract class LevelScene : IScene
             if (!tank.IsDestroyed)
             {
                 _collisionSystem.ApplyBonus(tank, type);
-
                 RaiseHudUpdate();
             }
         }
@@ -144,31 +145,29 @@ public abstract class LevelScene : IScene
     private void RaiseHudUpdate()
     {
         string p1, p2;
-
         var t1 = Tanks[0];
         var t2 = Tanks[1];
 
         if (!t1.IsDestroyed)
         {
-            p1 = $"P1:\nHP {t1.HP:F0}\nAMMO {t1.Stats.Ammo}\nFUEL {t1.Stats.Fuel:F0}";
+            p1 = $"P1:\nHP: {t1.HP:F0}\nAMMO: {t1.Stats.Ammo}\nFUEL: {t1.Stats.Fuel:F0}\nWINS: {SessionState.Player1Wins}";
         }
         else
         {
-            p1 = "P1:\nDESTROYED";
+            p1 = $"P1:\nDESTROYED";
         }
 
         if (!t2.IsDestroyed)
         {
-            p2 = $"P2:\nHP {t2.HP:F0}\nAMMO {t2.Stats.Ammo}\nFUEL {t2.Stats.Fuel:F0}";
+            p2 = $"P2:\nHP: {t2.HP:F0}\nAMMO: {t2.Stats.Ammo}\nFUEL: {t2.Stats.Fuel:F0}\nWINS: {SessionState.Player2Wins}";
         }
         else
         {
-            p2 = "P2:\nDESTROYED";
+            p2 = $"P2:\nDESTROYED";
         }
 
         HudDataUpdated?.Invoke(this, (p1, p2));
     }
-
 
     protected abstract void SetupLevel();
     protected virtual IScene? CreateNextLevel() => null;
@@ -179,34 +178,16 @@ public abstract class LevelScene : IScene
         var center = bg.Position;
         var half = bg.Bounds.HalfSize;
         float ht = thickness / 2f;
-
         float minX = center.X - half.X;
         float maxX = center.X + half.X;
         float minY = center.Y - half.Y;
         float maxY = center.Y + half.Y;
-
         float horizontalHalfWidth = half.X + thickness;
 
-        walls.Add(new Wall(     // down
-            position: new Vector2(center.X, minY - ht),
-            halfSize: new Vector2(horizontalHalfWidth, ht)
-        ));
-
-        walls.Add(new Wall(     // up
-            position: new Vector2(center.X, maxY + ht),
-            halfSize: new Vector2(horizontalHalfWidth, ht)
-        ));
-
-        walls.Add(new Wall(     // left
-            position: new Vector2(minX - ht, center.Y),
-            halfSize: new Vector2(ht, half.Y)
-        ));
-
-        walls.Add(new Wall(     //right
-            position: new Vector2(maxX + ht, center.Y),
-            halfSize: new Vector2(ht, half.Y)
-        ));
-
+        walls.Add(new Wall(new Vector2(center.X, minY - ht), new Vector2(horizontalHalfWidth, ht)));
+        walls.Add(new Wall(new Vector2(center.X, maxY + ht), new Vector2(horizontalHalfWidth, ht)));
+        walls.Add(new Wall(new Vector2(minX - ht, center.Y), new Vector2(ht, half.Y)));
+        walls.Add(new Wall(new Vector2(maxX + ht, center.Y), new Vector2(ht, half.Y)));
         return walls;
     }
 }

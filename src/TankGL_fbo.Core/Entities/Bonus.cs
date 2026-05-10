@@ -9,7 +9,6 @@ public sealed class Bonus : IUpdatable, IRenderable
     public Vector2 Position { get; private set; }
     public BonusType Type { get; }
     public float Lifetime { get; internal set; }
-
     public RectAABB Bounds => new(Position, new Vector2(24f, 24f));
 
     public string TexturePath => Type switch
@@ -19,6 +18,9 @@ public sealed class Bonus : IUpdatable, IRenderable
         BonusType.DamageBoost => "bonus_damage.png",
         BonusType.AmmoRefill => "bonus_ammo.png",
         BonusType.FuelCan => "bonus_fuel.png",
+        BonusType.SpeedDown => "penalty_speed.png",
+        BonusType.ArmorBreak => "penalty_armor.png",
+        BonusType.DamageDown => "penalty_damage.png",
         _ => "error.png"
     };
 

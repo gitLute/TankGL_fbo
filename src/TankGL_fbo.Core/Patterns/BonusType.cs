@@ -6,5 +6,8 @@ public enum BonusType
     Shield,
     DamageBoost,
     AmmoRefill,
-    FuelCan
+    FuelCan,
+    SpeedDown,
+    ArmorBreak,
+    DamageDown
 }

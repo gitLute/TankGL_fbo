@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TankGL_fbo.Core.Contracts;
 using TankGL_fbo.Core.Entities;
 using TankGL_fbo.Core.Interfaces;
+using TankGL_fbo.Core.Systems;
 
 namespace TankGL_fbo.Core.Scenes;
 
@@ -52,6 +53,7 @@ public abstract class MenuSceneBase : IScene
 
     public virtual void OnEnter()
     {
+        SessionState.Reset();
         _backgrounds.Add(CreateBackground());
         SelectedIndex = 0;
         InputCooldown = 0.5f;

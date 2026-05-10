@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TankGL_fbo.Core.Contracts;
 using TankGL_fbo.Core.Entities;
 using TankGL_fbo.Core.Interfaces;
+using TankGL_fbo.Core.Systems;
 
 namespace TankGL_fbo.Core.Scenes;
 
@@ -38,6 +39,7 @@ public sealed class InfoScene : IScene
 
     public void OnEnter()
     {
+        SessionState.Reset();
         _backgrounds.Add(new Background(new Vector2(0, 0), new Vector2(640, 360), "blank.png", tile: true));
 
         // _backgrounds.Add(new Background(
