@@ -56,7 +56,7 @@ public sealed class Level4Scene : LevelScene
     private bool[,] GenerateLineBasedGrid()
     {
         bool[,] grid = new bool[GridCols, GridRows];
-        int strokes = _rng.Next(4, 8);
+        int strokes = _rng.Next(6, 8);
 
         for (int i = 0; i < strokes; i++)
         {
@@ -64,9 +64,9 @@ public sealed class Level4Scene : LevelScene
             float y = _rng.NextSingle() * 400f - 200f;
 
             float angle = _rng.NextSingle() * MathF.PI * 2f;
-            float length = _rng.NextSingle() * 250f + 500f;
+            float length = _rng.NextSingle() * 350f + 500f;
             float curvature = (_rng.NextSingle() - 0.3f) * 0.06f;
-            float step = CellSize * 0.3f;
+            float step = CellSize * 0.1f;
             int steps = (int)(length / step);
 
             for (int s = 0; s < steps; s++)

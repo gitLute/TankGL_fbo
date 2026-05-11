@@ -8,10 +8,10 @@ public class DecoratorTests
     [Fact]
     public void SpeedDecorator_MultipliesSpeed()
     {
-        var baseStats = new BaseStats(); // Speed = 150
-        var decorated = new SpeedDecorator(baseStats, 1.5f, 10f);
-        Assert.Equal(225f, decorated.Speed);
-        Assert.Equal(150f, baseStats.Speed);
+        var baseStats = new BaseStats();
+        var decorated = new SpeedDecorator(baseStats, 2f, 10f);
+        Assert.Equal(150f, decorated.Speed);
+        Assert.Equal(75f, baseStats.Speed);
     }
 
     [Fact]
@@ -25,7 +25,7 @@ public class DecoratorTests
     [Fact]
     public void DamageDecorator_MultipliesDamage()
     {
-        var baseStats = new BaseStats(); // Damage = 25
+        var baseStats = new BaseStats();
         var decorated = new DamageDecorator(baseStats, 1.8f, 7f);
         Assert.Equal(45f, decorated.Damage);
     }

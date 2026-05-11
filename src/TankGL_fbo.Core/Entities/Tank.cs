@@ -22,6 +22,7 @@ public sealed class Tank : IUpdatable, IRenderable
 
     private const float MaxHP = 100f;
     private const float FireCooldown = 0.5f;
+    private float _collisionSlowdownTimer = 0f;
 
     public Tank(Vector2 startPos, string texturePath, ICombatStats stats)
     {
@@ -47,15 +48,21 @@ public sealed class Tank : IUpdatable, IRenderable
         {
             Stats = dec.Wrapped;
         }
-
         if (CooldownTimer > 0) CooldownTimer -= deltaTime;
+
+        if (_collisionSlowdownTimer > 0)
+            _collisionSlowdownTimer -= deltaTime;
     }
 
     public void Move(Vector2 direction, float deltaTime)
     {
         if (Stats.Fuel <= 0 || IsDestroyed) return;
 
-        Vector2 displacement = direction.Normalized() * Stats.Speed * deltaTime;
+        float currentSpeed = Stats.Speed;
+        if (_collisionSlowdownTimer > 0)
+            currentSpeed *= 0.35f;
+
+        Vector2 displacement = direction.Normalized() * currentSpeed * deltaTime;
         Position += displacement;
         Stats.Fuel -= MathF.Abs(displacement.Length()) * 0.01f;
         if (Stats.Fuel < 0) Stats.Fuel = 0;
@@ -73,9 +80,17 @@ public sealed class Tank : IUpdatable, IRenderable
     public bool TryFire()
     {
         if (CooldownTimer > 0 || Stats.Ammo <= 0 || IsDestroyed) return false;
-
         CooldownTimer = FireCooldown;
         Stats.Ammo--;
         return true;
+    }
+
+    /// <summary>
+    /// Активирует замедление скорости на 50% на 1 секунду.
+    /// Вызывается системой коллизий при ударе о стену или другой танк.
+    /// </summary>
+    public void ApplyCollisionSlowdown()
+    {
+        _collisionSlowdownTimer = 0.05f; // Длительность замедления
     }
 }

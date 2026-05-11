@@ -69,10 +69,10 @@ public class TankTests
     [Fact]
     public void Move_UpdatesPosition_AndConsumesFuel()
     {
-        var stats = new BaseStats(); // Speed = 150, Fuel = 100
+        var stats = new BaseStats();
         var tank = new Tank(Vector2.Zero, "tank.png", stats);
         tank.Move(new Vector2(1, 0), 1.0f);
-        Assert.Equal(150f, tank.Position.X);
+        Assert.Equal(75f, tank.Position.X);
         Assert.True(stats.Fuel < 100f);
     }
 

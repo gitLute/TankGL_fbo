@@ -12,7 +12,7 @@ public sealed class Level3Scene : LevelScene
     private const float halfX = 400f;
     private const float halfY = 300f;
     private const float CellSize = 50f;
-    private const float genChance = 0.18f;
+    private const float genChance = 0.1f;
 
     private const int GridCols = (int)(halfX * 2 / CellSize);
     private const int GridRows = (int)(halfY * 2 / CellSize);

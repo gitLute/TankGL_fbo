@@ -77,6 +77,12 @@ public sealed class CollisionSystem
             }
             resolvedPos = hitY ? new Vector2(resolvedPos.X, prevPos.Y) : posAfterY;
             tank.Position = resolvedPos;
+
+            // === НОВОЕ: Замедление танка при столкновении ===
+            if (hitX || hitY)
+            {
+                tank.ApplyCollisionSlowdown();
+            }
         }
 
         // Обработка подбора бонусов

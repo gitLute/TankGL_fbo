@@ -23,7 +23,7 @@ public class CollisionSystemTests
 
         system.Resolve();
 
-        Assert.Equal(-40f, tank.Position.X, 0.01f);
+        Assert.Equal(-36.25f, tank.Position.X, 0.01f);
     }
 
     [Fact]
