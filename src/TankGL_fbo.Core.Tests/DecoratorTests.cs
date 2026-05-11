@@ -25,7 +25,7 @@ public class DecoratorTests
     [Fact]
     public void DamageDecorator_MultipliesDamage()
     {
-        var baseStats = new BaseStats(); // Damage = 15
+        var baseStats = new BaseStats(); // Damage = 25
         var decorated = new DamageDecorator(baseStats, 1.8f, 7f);
         Assert.Equal(45f, decorated.Damage);
     }
