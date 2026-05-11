@@ -24,7 +24,8 @@ public sealed class Bullet : IUpdatable, IRenderable
     {
         Position = startPos;
         Rotation = directionAngle;
-        Damage = damage + (float)(new Random().NextDouble() * 25);
+        // Damage = damage + (float)(new Random().NextDouble() * 25);
+        Damage = damage * (float)(new Random().NextDouble() + 1.0f);
         Lifetime = lifetime;
 
         OwnerId = ownerId;

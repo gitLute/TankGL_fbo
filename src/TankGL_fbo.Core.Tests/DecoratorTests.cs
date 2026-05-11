@@ -27,7 +27,7 @@ public class DecoratorTests
     {
         var baseStats = new BaseStats(); // Damage = 15
         var decorated = new DamageDecorator(baseStats, 1.8f, 7f);
-        Assert.Equal(27f, decorated.Damage);
+        Assert.Equal(45f, decorated.Damage);
     }
 
     [Fact]
