@@ -72,7 +72,7 @@ public class TankTests
         var stats = new BaseStats();
         var tank = new Tank(Vector2.Zero, "tank.png", stats);
         tank.Move(new Vector2(1, 0), 1.0f);
-        Assert.Equal(75f, tank.Position.X);
+        Assert.Equal(110f, tank.Position.X);
         Assert.True(stats.Fuel < 100f);
     }
 

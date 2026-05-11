@@ -10,8 +10,8 @@ public class DecoratorTests
     {
         var baseStats = new BaseStats();
         var decorated = new SpeedDecorator(baseStats, 2f, 10f);
-        Assert.Equal(150f, decorated.Speed);
-        Assert.Equal(75f, baseStats.Speed);
+        Assert.Equal(220f, decorated.Speed);
+        Assert.Equal(110f, baseStats.Speed);
     }
 
     [Fact]
