@@ -31,7 +31,7 @@ public class CollisionSystemTests
     {
         var tank0 = new Tank(new Vector2(-50, 0), "tank.png", new BaseStats());
         var tank1 = new Tank(new Vector2(50, 0), "tank.png", new BaseStats());
-        // Пуля от игрока 0 летит вправо и попадает в танк 1
+
         var bullet = new Bullet(new Vector2(40, 0), 0f, 100f, 30f, 2f, 0);
 
         var system = new CollisionSystem(new List<Tank> { tank0, tank1 }, new List<Wall>(), new List<Bonus>(), new List<Bullet> { bullet });
@@ -45,12 +45,12 @@ public class CollisionSystemTests
     public void Resolve_BulletDoesNotDamageOwner()
     {
         var tank = new Tank(new Vector2(50, 0), "tank.png", new BaseStats());
-        var bullet = new Bullet(new Vector2(40, 0), 0f, 100f, 30f, 2f, 0); // OwnerId == 0 (индекс танка)
+        var bullet = new Bullet(new Vector2(40, 0), 0f, 100f, 30f, 2f, 0);
         var system = new CollisionSystem(new List<Tank> { tank }, new List<Wall>(), new List<Bonus>(), new List<Bullet> { bullet });
         system.Resolve();
 
         Assert.Equal(100f, tank.HP);
-        Assert.False(bullet.IsExpired); // Пуля не должна исчезнуть от столкновения с владельцем
+        Assert.False(bullet.IsExpired);
     }
 
     [Fact]
@@ -62,8 +62,8 @@ public class CollisionSystemTests
 
         system.Resolve();
 
-        Assert.True(bonus.IsExpired); // Lifetime принудительно ставится в 0
-        Assert.Equal(40, tank.Stats.Ammo); // Base 35 + 15 = 50, но кап на 40
+        Assert.True(bonus.IsExpired);
+        Assert.Equal(40, tank.Stats.Ammo);
     }
 
     [Fact]

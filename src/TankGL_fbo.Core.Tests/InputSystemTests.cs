@@ -44,7 +44,7 @@ public class InputSystemTests
     {
         var tanks = new List<Tank> { new Tank(Vector2.Zero, "tank.png", new BaseStats()) };
         var bullets = new List<Bullet>();
-        tanks[0].Update(0.6f); // Сбрасываем начальный кулдаун 0.5f
+        tanks[0].Update(0.6f);
 
         var input = new InputSystem(tanks, bullets);
         var actions = new Dictionary<int, HashSet<PlayerAction>>
@@ -61,18 +61,18 @@ public class InputSystemTests
     {
         var tanks = new List<Tank> { new Tank(Vector2.Zero, "tank.png", new BaseStats()) };
         var bullets = new List<Bullet>();
-        tanks[0].Update(0.6f); // Сбрасываем начальный кулдаун
+        tanks[0].Update(0.6f);
 
         var input = new InputSystem(tanks, bullets);
         var actions = new Dictionary<int, HashSet<PlayerAction>>
         {
             [0] = new HashSet<PlayerAction> { PlayerAction.Fire }
         };
-        input.Process(actions, 0.1f); // Первый выстрел
+        input.Process(actions, 0.1f);
         Assert.Single(bullets);
 
-        input.Process(actions, 0.1f); // Попытка второго выстрела сразу
-        Assert.Single(bullets); // Кулдаун 0.5f не должен дать выстрелить снова
+        input.Process(actions, 0.1f);
+        Assert.Single(bullets);
     }
 
     [Fact]

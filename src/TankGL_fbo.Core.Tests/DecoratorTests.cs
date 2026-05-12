@@ -17,7 +17,7 @@ public class DecoratorTests
     [Fact]
     public void ArmorDecorator_AddsArmor()
     {
-        var baseStats = new BaseStats(); // Armor = 10
+        var baseStats = new BaseStats();
         var decorated = new ArmorDecorator(baseStats, 20f, 8f);
         Assert.Equal(30f, decorated.Armor);
     }

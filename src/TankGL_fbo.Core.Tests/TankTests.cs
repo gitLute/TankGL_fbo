@@ -15,25 +15,25 @@ public class TankTests
         Assert.Equal(100f, tank.Position.X);
         Assert.Equal(100f, tank.Position.Y);
         Assert.Equal(100f, tank.HP);
-        //Assert.Equal(0f, tank.CooldownTimer); // changed
+
         Assert.False(tank.IsDestroyed);
     }
 
     [Fact]
     public void TakeDamage_ReducesHP_ByNetDamage()
     {
-        var stats = new BaseStats(); // Armor = 10
+        var stats = new BaseStats();
         var tank = new Tank(Vector2.Zero, "tank.png", stats);
-        tank.TakeDamage(30f); // Net = 30 - 10 = 20
+        tank.TakeDamage(30f);
         Assert.Equal(80f, tank.HP);
     }
 
     [Fact]
     public void TakeDamage_DoesNotReduceHP_IfDamageLessThanArmor()
     {
-        var stats = new BaseStats(); // Armor = 10
+        var stats = new BaseStats();
         var tank = new Tank(Vector2.Zero, "tank.png", stats);
-        tank.TakeDamage(5f); // Net = -5 -> 0
+        tank.TakeDamage(5f);
         Assert.Equal(100f, tank.HP);
     }
 
@@ -46,16 +46,6 @@ public class TankTests
         Assert.Equal(0f, tank.HP);
         Assert.True(tank.IsDestroyed);
     }
-
-    // [Fact]
-    // public void TryFire_ConsumesAmmo_AndSetsCooldown()
-    // {
-    //     var stats = new BaseStats(); // Ammo = 20
-    //     var tank = new Tank(Vector2.Zero, "tank.png", stats);
-    //     Assert.True(tank.TryFire());
-    //     Assert.Equal(19, stats.Ammo);
-    //     Assert.True(tank.CooldownTimer > 0);
-    // }
 
     [Fact]
     public void TryFire_Fails_WhenOnCooldown()

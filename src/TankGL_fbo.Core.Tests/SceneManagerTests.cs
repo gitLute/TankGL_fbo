@@ -41,8 +41,8 @@ public class SceneManagerTests
         var manager = new SceneManager();
         var scene = new MockScene();
         manager.ChangeScene(scene);
-        manager.Update(0.1f, new Dictionary<int, HashSet<PlayerAction>>()); // OnEnter
-        manager.Update(0.1f, new Dictionary<int, HashSet<PlayerAction>>()); // Update
+        manager.Update(0.1f, new Dictionary<int, HashSet<PlayerAction>>());
+        manager.Update(0.1f, new Dictionary<int, HashSet<PlayerAction>>());
         Assert.True(scene.UpdateCalled);
     }
 }

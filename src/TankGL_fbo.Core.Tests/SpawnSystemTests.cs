@@ -16,7 +16,7 @@ public class SpawnSystemTests
         var bonuses = new List<Bonus>();
         var system = new SpawnSystem(bonuses, new List<Wall>(), new List<Tank>());
         system.Update(0.1f);
-        Assert.Empty(bonuses); // Минимальный интервал 4 сек
+        Assert.Empty(bonuses);
     }
 
     [Fact]
@@ -35,10 +35,10 @@ public class SpawnSystemTests
     public void Update_SpawnsBonus_AfterMaxInterval()
     {
         var bonuses = new List<Bonus>();
-        var tanks = new List<Tank> { new Tank(new Vector2(1000, 1000), "tank.png", new BaseStats()) }; // Далеко от зоны спавна
+        var tanks = new List<Tank> { new Tank(new Vector2(1000, 1000), "tank.png", new BaseStats()) };
         var system = new SpawnSystem(bonuses, new List<Wall>(), tanks);
 
-        system.Update(11f); // Макс. интервал = 10 сек
+        system.Update(11f);
 
         Assert.NotEmpty(bonuses);
         var spawned = bonuses[0];
